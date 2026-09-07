@@ -519,6 +519,8 @@ describe('AuthService', () => {
     const fakePayload: AccessTokenPayload = {
       sub: 'user-1',
       jti: 'jti-test',
+      role: 'ALUNO',
+      tenantId: null,
       iat: 0,
       exp: Math.floor(Date.now() / 1000) + 900,
     };

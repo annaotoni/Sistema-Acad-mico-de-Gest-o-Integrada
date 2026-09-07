@@ -54,7 +54,7 @@ describe('Fluxo crítico de autenticação (e2e real)', () => {
   let resetToken: string;
 
   beforeAll(async () => {
-    if (!process.env.DATABASE_URL.includes('_test')) {
+    if (!process.env.DATABASE_URL!.includes('_test')) {
       throw new Error(
         `Recusando rodar e2e real: DATABASE_URL não aponta pra um banco de teste (${process.env.DATABASE_URL}).`,
       );

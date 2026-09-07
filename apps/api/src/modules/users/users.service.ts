@@ -22,6 +22,8 @@ export class UsersService {
         email: true,
         mfaEnabled: true,
         mfaSecret: true,
+        role: true,
+        tenantId: true,
       },
     });
   }

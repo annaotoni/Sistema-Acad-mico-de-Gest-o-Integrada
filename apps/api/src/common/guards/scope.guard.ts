@@ -32,7 +32,7 @@ export class ScopeGuard implements CanActivate {
       // Admin e Secretaria têm acesso irrestrito
       if (user.role === 'ADMIN' || user.role === 'SECRETARIA') return true;
 
-      const classId = req.params['classId'];
+      const classId = req.params['classId'] as string;
       if (!classId) throw new ForbiddenException('classId ausente na rota');
 
       if (user.role === 'PROFESSOR') {
