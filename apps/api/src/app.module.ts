@@ -9,8 +9,13 @@ import { AppService } from './app.service';
 import { validateEnv } from './config/env.validation';
 import { BullMqModule } from './infrastructure/bullmq/bullmq.module';
 import { RedisModule } from './infrastructure/redis/redis.module';
+import { AuditModule } from './common/audit/audit.module';
 import { AcademicModule } from './modules/academic/academic.module';
+import { AssignmentsModule } from './modules/assignments/assignments.module';
+import { AttendanceModule } from './modules/attendance/attendance.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { ContentModule } from './modules/content/content.module';
+import { GradesModule } from './modules/grades/grades.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { PrismaModule } from './prisma/prisma.module';
 
@@ -31,10 +36,15 @@ import { PrismaModule } from './prisma/prisma.module';
     }),
     RedisModule,
     BullMqModule,
+    AuditModule,
     PrismaModule,
     AuthModule,
     SettingsModule,
     AcademicModule,
+    ContentModule,
+    AssignmentsModule,
+    GradesModule,
+    AttendanceModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
