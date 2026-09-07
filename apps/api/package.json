@@ -94,7 +94,8 @@
     },
     "moduleNameMapper": {
       "^otplib$": "<rootDir>/__mocks__/otplib.ts",
-      "^qrcode$": "<rootDir>/__mocks__/qrcode.ts"
+      "^qrcode$": "<rootDir>/__mocks__/qrcode.ts",
+      "^@nestjs/bullmq$": "<rootDir>/__mocks__/nestjs-bullmq.ts"
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"

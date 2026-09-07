@@ -16,6 +16,7 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ContentModule } from './modules/content/content.module';
 import { GradesModule } from './modules/grades/grades.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { PrismaModule } from './prisma/prisma.module';
 
@@ -45,6 +46,7 @@ import { PrismaModule } from './prisma/prisma.module';
     AssignmentsModule,
     GradesModule,
     AttendanceModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

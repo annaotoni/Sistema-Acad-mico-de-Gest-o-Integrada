@@ -40,6 +40,15 @@ export class MailService implements OnModuleInit {
     });
   }
 
+  async sendNotificationEmail(to: string, subject: string, title: string, body: string): Promise<void> {
+    await this.transporter.sendMail({
+      from: this.config.get<string>('MAIL_FROM'),
+      to,
+      subject,
+      html: buildEmailHtml({ heading: title, message: body, ctaLabel: 'Acessar portal', ctaUrl: this.config.getOrThrow<string>('FRONTEND_URL') }),
+    });
+  }
+
   async sendPasswordResetEmail(email: string, rawToken: string): Promise<void> {
     const resetUrl = `${this.config.get<string>('FRONTEND_URL')}/reset-password?token=${rawToken}`;
 
