@@ -80,7 +80,7 @@ jobs:
 
       - name: Testes e2e (fluxo crítico, Postgres real)
         working-directory: apps/api
-        run: npx jest --config ./test/jest-e2e-real.json --runInBand
+        run: npx jest --config ./test/jest-e2e-real.json --runInBand --forceExit
 
       - name: Build
         working-directory: apps/api

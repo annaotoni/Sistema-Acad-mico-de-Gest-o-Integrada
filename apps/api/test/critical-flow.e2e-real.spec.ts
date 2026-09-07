@@ -8,6 +8,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import { App } from 'supertest/types';
+import { AuditModule } from '../src/common/audit/audit.module';
+import { AuditService } from '../src/common/audit/audit.service';
 import { AuthModule } from '../src/modules/auth/auth.module';
 import { HibpService } from '../src/modules/hibp/hibp.service';
 import { MailService } from '../src/modules/mail/mail.service';
@@ -72,11 +74,14 @@ describe('Fluxo crítico de autenticação (e2e real)', () => {
           ignoreEnvFile: true,
           load: [() => TEST_ENV],
         }),
+        AuditModule,
         AuthModule,
         UsersModule,
         PrismaModule,
       ],
     })
+      .overrideProvider(AuditService)
+      .useValue({ log: jest.fn().mockResolvedValue(undefined) })
       .overrideProvider(MailService)
       .useValue(mailService)
       .overrideProvider(HibpService)
