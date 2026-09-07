@@ -7,9 +7,10 @@ const envSchema = z.object({
     .default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.string().url(),
+
+  // SMTP
   SMTP_HOST: z.string().min(1).default('localhost'),
   SMTP_PORT: z.coerce.number().int().positive().default(1025),
-  // z.coerce.boolean() faz Boolean(string): "false" (não-vazia) virava true.
   SMTP_SECURE: z
     .enum(['true', 'false'])
     .default('false')
@@ -17,6 +18,7 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   MAIL_FROM: z.string().email().default('noreply@auth-system.local'),
+
   FRONTEND_URL: z.string().url().default('http://localhost:5173'),
   CORS_ORIGINS: z
     .string()
@@ -41,8 +43,25 @@ const envSchema = z.object({
         message: 'CORS_ORIGINS deve conter URLs válidas separadas por vírgula',
       },
     ),
+
+  // Redis — throttler, blocklist de tokens, cache de features, filas BullMQ
   REDIS_URL: z.string().url().default('redis://localhost:6379'),
+
+  // JWT
   JWT_ACCESS_SECRET: z.string().min(32),
+
+  // Gateway de pagamento (Asaas)
+  ASAAS_API_KEY: z.string().optional(),
+  ASAAS_BASE_URL: z
+    .string()
+    .url()
+    .default('https://sandbox.asaas.com/api/v3'),
+  ASAAS_WEBHOOK_TOKEN: z.string().optional(),
+
+  // LLM (assistente)
+  LLM_PROVIDER: z.enum(['openai', 'anthropic']).default('openai'),
+  LLM_API_KEY: z.string().optional(),
+  LLM_MODEL: z.string().default('gpt-4o-mini'),
 });
 
 export type Env = z.infer<typeof envSchema>;

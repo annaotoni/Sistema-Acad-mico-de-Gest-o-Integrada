@@ -9,10 +9,20 @@ datasource db {
   extensions = [citext]
 }
 
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
 enum UserStatus {
   ACTIVE
   SUSPENDED
   DELETED
+}
+
+enum Role {
+  ADMIN
+  SECRETARIA
+  PROFESSOR
+  ALUNO
+  SISTEMA
 }
 
 enum AuthEvent {
@@ -28,6 +38,20 @@ enum AuthEvent {
   MFA_CHALLENGE_FAILED
 }
 
+// ─── Auth ─────────────────────────────────────────────────────────────────────
+
+model Tenant {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  users User[]
+
+  @@map("tenants")
+}
+
 model User {
   id               String     @id @default(uuid()) @db.Uuid
   email            String     @unique @db.Citext
@@ -36,16 +60,20 @@ model User {
   failedLoginCount Int        @default(0) @map("failed_login_count")
   lockedUntil      DateTime?  @map("locked_until") @db.Timestamptz
   status           UserStatus @default(ACTIVE)
+  role             Role       @default(ALUNO)
+  tenantId         String?    @map("tenant_id") @db.Uuid
   mfaEnabled       Boolean    @default(false) @map("mfa_enabled")
   mfaSecret        String?    @map("mfa_secret")
   createdAt        DateTime   @default(now()) @map("created_at") @db.Timestamptz
   updatedAt        DateTime   @updatedAt @map("updated_at") @db.Timestamptz
 
+  tenant             Tenant?                  @relation(fields: [tenantId], references: [id])
   refreshTokens      RefreshToken[]
   passwordResets     PasswordResetToken[]
   emailVerifications EmailVerificationToken[]
   auditLogs          AuthAuditLog[]
 
+  @@index([tenantId])
   @@map("users")
 }
 

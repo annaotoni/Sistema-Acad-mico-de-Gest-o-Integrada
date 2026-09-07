@@ -7,6 +7,8 @@ import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { validateEnv } from './config/env.validation';
+import { BullMqModule } from './infrastructure/bullmq/bullmq.module';
+import { RedisModule } from './infrastructure/redis/redis.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 
@@ -16,8 +18,6 @@ import { PrismaModule } from './prisma/prisma.module';
       isGlobal: true,
       validate: validateEnv,
     }),
-    // Limite geral pra qualquer rota; endpoints sensíveis (register, login,
-    // forgot-password) sobrescrevem com @Throttle() mais restritivo.
     ThrottlerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
@@ -27,6 +27,8 @@ import { PrismaModule } from './prisma/prisma.module';
         ),
       }),
     }),
+    RedisModule,
+    BullMqModule,
     PrismaModule,
     AuthModule,
   ],
