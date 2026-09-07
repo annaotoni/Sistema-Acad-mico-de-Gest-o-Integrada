@@ -1,9 +1,27 @@
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import type { AccessTokenPayload } from '../../common/interfaces/access-token-payload';
 import { AssignmentsService } from './assignments.service';
 
-const aluno: AccessTokenPayload = { sub: 'a1', jti: 'j1', role: 'ALUNO', tenantId: 't1', iat: 0, exp: 0 };
-const professor: AccessTokenPayload = { sub: 'p1', jti: 'j2', role: 'PROFESSOR', tenantId: 't1', iat: 0, exp: 0 };
+const aluno: AccessTokenPayload = {
+  sub: 'a1',
+  jti: 'j1',
+  role: 'ALUNO',
+  tenantId: 't1',
+  iat: 0,
+  exp: 0,
+};
+const professor: AccessTokenPayload = {
+  sub: 'p1',
+  jti: 'j2',
+  role: 'PROFESSOR',
+  tenantId: 't1',
+  iat: 0,
+  exp: 0,
+};
 
 const mockRepo = {
   createAssignment: jest.fn(),
@@ -27,17 +45,27 @@ describe('AssignmentsService', () => {
   describe('submit', () => {
     it('lança NotFoundException para atividade inexistente', async () => {
       mockRepo.findAssignmentById.mockResolvedValue(null);
-      await expect(service.submit('a1', aluno, {})).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.submit('a1', aluno, {})).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('lança ConflictException para entrega duplicada', async () => {
-      mockRepo.findAssignmentById.mockResolvedValue({ dueDate: new Date('2099-01-01'), maxScore: 10 });
+      mockRepo.findAssignmentById.mockResolvedValue({
+        dueDate: new Date('2099-01-01'),
+        maxScore: 10,
+      });
       mockRepo.findSubmission.mockResolvedValue({ id: 's1' });
-      await expect(service.submit('a1', aluno, {})).rejects.toBeInstanceOf(ConflictException);
+      await expect(service.submit('a1', aluno, {})).rejects.toBeInstanceOf(
+        ConflictException,
+      );
     });
 
     it('marca is_late quando entregue após o prazo', async () => {
-      mockRepo.findAssignmentById.mockResolvedValue({ dueDate: new Date('2000-01-01'), maxScore: 10 });
+      mockRepo.findAssignmentById.mockResolvedValue({
+        dueDate: new Date('2000-01-01'),
+        maxScore: 10,
+      });
       mockRepo.findSubmission.mockResolvedValue(null);
       mockRepo.createSubmission.mockResolvedValue({ isLate: true });
       await service.submit('a1', aluno, { content: 'resp' });
@@ -47,7 +75,10 @@ describe('AssignmentsService', () => {
     });
 
     it('não marca is_late quando entregue antes do prazo', async () => {
-      mockRepo.findAssignmentById.mockResolvedValue({ dueDate: new Date('2099-01-01'), maxScore: 10 });
+      mockRepo.findAssignmentById.mockResolvedValue({
+        dueDate: new Date('2099-01-01'),
+        maxScore: 10,
+      });
       mockRepo.findSubmission.mockResolvedValue(null);
       mockRepo.createSubmission.mockResolvedValue({ isLate: false });
       await service.submit('a1', aluno, { content: 'resp' });

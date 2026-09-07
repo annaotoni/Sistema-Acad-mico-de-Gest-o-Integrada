@@ -2,8 +2,22 @@ import { NotFoundException } from '@nestjs/common';
 import type { AccessTokenPayload } from '../../common/interfaces/access-token-payload';
 import { GradesService } from './grades.service';
 
-const professor: AccessTokenPayload = { sub: 'p1', jti: 'j1', role: 'PROFESSOR', tenantId: 't1', iat: 0, exp: 0 };
-const aluno: AccessTokenPayload = { sub: 'a1', jti: 'j2', role: 'ALUNO', tenantId: 't1', iat: 0, exp: 0 };
+const professor: AccessTokenPayload = {
+  sub: 'p1',
+  jti: 'j1',
+  role: 'PROFESSOR',
+  tenantId: 't1',
+  iat: 0,
+  exp: 0,
+};
+const aluno: AccessTokenPayload = {
+  sub: 'a1',
+  jti: 'j2',
+  role: 'ALUNO',
+  tenantId: 't1',
+  iat: 0,
+  exp: 0,
+};
 
 const mockRepo = {
   createGrade: jest.fn(),
@@ -23,15 +37,18 @@ describe('GradesService', () => {
   });
 
   describe('listGrades', () => {
-    it('ALUNO só vê próprias notas', () => {
+    it('ALUNO só vê próprias notas', async () => {
       mockRepo.findGradesByStudentAndClass.mockResolvedValue([]);
-      service.listGrades('c1', aluno);
-      expect(mockRepo.findGradesByStudentAndClass).toHaveBeenCalledWith('a1', 'c1');
+      await service.listGrades('c1', aluno);
+      expect(mockRepo.findGradesByStudentAndClass).toHaveBeenCalledWith(
+        'a1',
+        'c1',
+      );
     });
 
-    it('PROFESSOR vê todas as notas da turma', () => {
+    it('PROFESSOR vê todas as notas da turma', async () => {
       mockRepo.findGradesByClass.mockResolvedValue([]);
-      service.listGrades('c1', professor);
+      await service.listGrades('c1', professor);
       expect(mockRepo.findGradesByClass).toHaveBeenCalledWith('c1');
     });
   });

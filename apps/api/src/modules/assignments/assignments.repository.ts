@@ -13,7 +13,9 @@ export class AssignmentsRepository {
     maxScore: number;
     lessonId?: string;
   }) {
-    return this.prisma.assignment.create({ data: { ...data, maxScore: data.maxScore } });
+    return this.prisma.assignment.create({
+      data: { ...data, maxScore: data.maxScore },
+    });
   }
 
   findAssignmentsByClass(classId: string) {
@@ -55,10 +57,18 @@ export class AssignmentsRepository {
     return this.prisma.submission.findUnique({ where: { id } });
   }
 
-  gradeSubmission(id: string, data: { score: number; feedback?: string; gradedById: string }) {
+  gradeSubmission(
+    id: string,
+    data: { score: number; feedback?: string; gradedById: string },
+  ) {
     return this.prisma.submission.update({
       where: { id },
-      data: { score: data.score, feedback: data.feedback, gradedById: data.gradedById, gradedAt: new Date() },
+      data: {
+        score: data.score,
+        feedback: data.feedback,
+        gradedById: data.gradedById,
+        gradedAt: new Date(),
+      },
     });
   }
 }

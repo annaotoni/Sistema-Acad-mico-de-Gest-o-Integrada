@@ -26,7 +26,10 @@ export class AcademicController {
 
   @Roles('ADMIN', 'SECRETARIA')
   @Post('courses')
-  createCourse(@CurrentUser() user: AccessTokenPayload, @Body() dto: CreateCourseDto) {
+  createCourse(
+    @CurrentUser() user: AccessTokenPayload,
+    @Body() dto: CreateCourseDto,
+  ) {
     return this.service.createCourse(user, dto);
   }
 

@@ -23,7 +23,11 @@ export class GradesService {
     return this.repo.findGradesByClass(classId);
   }
 
-  async updateGrade(gradeId: string, dto: UpdateGradeDto, user: AccessTokenPayload) {
+  async updateGrade(
+    gradeId: string,
+    dto: UpdateGradeDto,
+    user: AccessTokenPayload,
+  ) {
     const grade = await this.repo.findGradeById(gradeId);
     if (!grade) throw new NotFoundException('Nota não encontrada');
 

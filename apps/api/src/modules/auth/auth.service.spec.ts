@@ -19,7 +19,12 @@ jest.mock('./services/mfa.service');
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: {
-    user: { create: jest.Mock; update: jest.Mock; findUnique: jest.Mock; findUniqueOrThrow: jest.Mock };
+    user: {
+      create: jest.Mock;
+      update: jest.Mock;
+      findUnique: jest.Mock;
+      findUniqueOrThrow: jest.Mock;
+    };
     emailVerificationToken: {
       findUnique: jest.Mock;
       update: jest.Mock;
@@ -60,7 +65,12 @@ describe('AuthService', () => {
 
   beforeEach(async () => {
     prisma = {
-      user: { create: jest.fn(), update: jest.fn(), findUnique: jest.fn(), findUniqueOrThrow: jest.fn() },
+      user: {
+        create: jest.fn(),
+        update: jest.fn(),
+        findUnique: jest.fn(),
+        findUniqueOrThrow: jest.fn(),
+      },
       emailVerificationToken: {
         findUnique: jest.fn(),
         update: jest.fn(),
@@ -437,7 +447,10 @@ describe('AuthService', () => {
         revokedAt: null,
         expiresAt: new Date(Date.now() + 60_000),
       });
-      prisma.user.findUniqueOrThrow.mockResolvedValue({ role: 'ALUNO', tenantId: null });
+      prisma.user.findUniqueOrThrow.mockResolvedValue({
+        role: 'ALUNO',
+        tenantId: null,
+      });
 
       const result = await service.refresh(
         'raw-old-token',

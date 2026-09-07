@@ -1,4 +1,10 @@
-import { IsISO8601, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import {
+  IsISO8601,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { IsNumber, Min } from 'class-validator';
 

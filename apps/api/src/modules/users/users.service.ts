@@ -33,7 +33,11 @@ export class UsersService {
   }
 
   // Troca de role sempre auditada — ponto único de alteração de permissão
-  async updateRole(targetId: string, newRole: Role, actorId: string): Promise<User> {
+  async updateRole(
+    targetId: string,
+    newRole: Role,
+    actorId: string,
+  ): Promise<User> {
     const user = await this.prisma.user.findUnique({ where: { id: targetId } });
     if (!user) throw new NotFoundException('Usuário não encontrado');
 

@@ -46,7 +46,12 @@ export class SettingsService {
             OR: [
               { scopeType: FeatureScopeType.GLOBAL },
               ...(user.tenantId
-                ? [{ scopeType: FeatureScopeType.TENANT, scopeId: user.tenantId }]
+                ? [
+                    {
+                      scopeType: FeatureScopeType.TENANT,
+                      scopeId: user.tenantId,
+                    },
+                  ]
                 : []),
               { scopeType: FeatureScopeType.ROLE, scopeId: user.role },
             ],
@@ -60,7 +65,12 @@ export class SettingsService {
 
     for (const feature of features) {
       if (feature.isCore) {
-        tabs.push({ key: feature.key, name: feature.name, order: 0, configJson: null });
+        tabs.push({
+          key: feature.key,
+          name: feature.name,
+          order: 0,
+          configJson: null,
+        });
         continue;
       }
 

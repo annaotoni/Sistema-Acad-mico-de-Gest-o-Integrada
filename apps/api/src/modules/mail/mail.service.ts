@@ -40,12 +40,22 @@ export class MailService implements OnModuleInit {
     });
   }
 
-  async sendNotificationEmail(to: string, subject: string, title: string, body: string): Promise<void> {
+  async sendNotificationEmail(
+    to: string,
+    subject: string,
+    title: string,
+    body: string,
+  ): Promise<void> {
     await this.transporter.sendMail({
       from: this.config.get<string>('MAIL_FROM'),
       to,
       subject,
-      html: buildEmailHtml({ heading: title, message: body, ctaLabel: 'Acessar portal', ctaUrl: this.config.getOrThrow<string>('FRONTEND_URL') }),
+      html: buildEmailHtml({
+        heading: title,
+        message: body,
+        ctaLabel: 'Acessar portal',
+        ctaUrl: this.config.getOrThrow<string>('FRONTEND_URL'),
+      }),
     });
   }
 

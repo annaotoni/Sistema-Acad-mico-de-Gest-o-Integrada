@@ -24,17 +24,25 @@ beforeEach(() => jest.clearAllMocks());
 describe('updateRole', () => {
   it('lança NotFoundException se usuário não existe', async () => {
     mockPrisma.user.findUnique.mockResolvedValue(null);
-    await expect(makeService().updateRole('user-x', Role.PROFESSOR, 'admin-1'))
-      .rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      makeService().updateRole('user-x', Role.PROFESSOR, 'admin-1'),
+    ).rejects.toBeInstanceOf(NotFoundException);
     expect(mockAudit.log).not.toHaveBeenCalled();
   });
 
   it('atualiza role e registra AuditLog com valor antigo e novo', async () => {
     mockPrisma.user.findUnique.mockResolvedValue(existingUser);
-    mockPrisma.user.update.mockResolvedValue({ ...existingUser, role: Role.PROFESSOR });
+    mockPrisma.user.update.mockResolvedValue({
+      ...existingUser,
+      role: Role.PROFESSOR,
+    });
     mockAudit.log.mockResolvedValue({});
 
-    const result = await makeService().updateRole('user-1', Role.PROFESSOR, 'admin-1');
+    const result = await makeService().updateRole(
+      'user-1',
+      Role.PROFESSOR,
+      'admin-1',
+    );
 
     expect(result.role).toBe(Role.PROFESSOR);
     expect(mockAudit.log).toHaveBeenCalledWith({

@@ -32,9 +32,7 @@ export class FeatureGuard implements CanActivate {
     );
     if (!feature) return true;
 
-    const user = context
-      .switchToHttp()
-      .getRequest<Request>()
+    const user = context.switchToHttp().getRequest<Request>()
       .user as AccessTokenPayload;
 
     // Feature core nunca pode ser desabilitada

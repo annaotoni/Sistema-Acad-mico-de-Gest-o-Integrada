@@ -4,7 +4,10 @@ import { MailModule } from '../mail/mail.module';
 import { NotificationProcessor } from '../../jobs/processors/notification.processor';
 import { NotificationsController } from './notifications.controller';
 import { NotificationsRepository } from './notifications.repository';
-import { NotificationsService, NOTIFICATIONS_QUEUE } from './notifications.service';
+import {
+  NotificationsService,
+  NOTIFICATIONS_QUEUE,
+} from './notifications.service';
 
 @Module({
   imports: [
@@ -12,7 +15,11 @@ import { NotificationsService, NOTIFICATIONS_QUEUE } from './notifications.servi
     MailModule,
   ],
   controllers: [NotificationsController],
-  providers: [NotificationsService, NotificationsRepository, NotificationProcessor],
+  providers: [
+    NotificationsService,
+    NotificationsRepository,
+    NotificationProcessor,
+  ],
   exports: [NotificationsService],
 })
 export class NotificationsModule {}

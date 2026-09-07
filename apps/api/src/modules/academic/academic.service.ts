@@ -73,7 +73,8 @@ export class AcademicService {
   }
 
   listClasses(user: AccessTokenPayload) {
-    if (user.role === 'PROFESSOR') return this.repo.findClassesByTeacher(user.sub);
+    if (user.role === 'PROFESSOR')
+      return this.repo.findClassesByTeacher(user.sub);
     if (user.role === 'ALUNO') return this.repo.findClassesByStudent(user.sub);
     if (!user.tenantId) return [];
     return this.repo.findClassesByTenant(user.tenantId);
@@ -103,7 +104,9 @@ export class AcademicService {
     const cls = await this.repo.findClassById(classId);
     if (!cls) throw new NotFoundException('Turma não encontrada');
     if (cls.status === ClassStatus.ENCERRADA) {
-      throw new BadRequestException('Turma encerrada não aceita novas matrículas');
+      throw new BadRequestException(
+        'Turma encerrada não aceita novas matrículas',
+      );
     }
 
     if (cls.maxStudents) {
@@ -114,7 +117,8 @@ export class AcademicService {
     }
 
     const existing = await this.repo.findEnrollment(dto.studentId, classId);
-    if (existing) throw new ConflictException('Aluno já matriculado nesta turma');
+    if (existing)
+      throw new ConflictException('Aluno já matriculado nesta turma');
 
     return this.repo.createEnrollment(dto.studentId, classId);
   }
@@ -135,11 +139,14 @@ export class AcademicService {
     const cls = await this.repo.findClassById(classId);
     if (!cls) throw new NotFoundException('Turma não encontrada');
     if (cls.status === ClassStatus.ENCERRADA) {
-      throw new BadRequestException('Turma encerrada não aceita novos vínculos');
+      throw new BadRequestException(
+        'Turma encerrada não aceita novos vínculos',
+      );
     }
 
     const existing = await this.repo.findTeacherAssignment(teacherId, classId);
-    if (existing) throw new ConflictException('Professor já vinculado a esta turma');
+    if (existing)
+      throw new ConflictException('Professor já vinculado a esta turma');
 
     return this.repo.createTeacherAssignment(teacherId, classId);
   }

@@ -29,14 +29,15 @@ export class TicketsController {
   constructor(private readonly service: TicketsService) {}
 
   private user(req: Request): AccessTokenPayload {
-    return (req as any).user as AccessTokenPayload;
+    return (req as unknown as { user: AccessTokenPayload }).user;
   }
 
   @Post()
   @Roles(Role.ALUNO)
   create(@Body() body: unknown, @Req() req: Request) {
     const parsed = CreateTicketSchema.safeParse(body);
-    if (!parsed.success) throw new UnprocessableEntityException(parsed.error.flatten());
+    if (!parsed.success)
+      throw new UnprocessableEntityException(parsed.error.flatten());
     return this.service.create(parsed.data, this.user(req));
   }
 
@@ -57,7 +58,8 @@ export class TicketsController {
     @Req() req: Request,
   ) {
     const parsed = CreateMessageSchema.safeParse(body);
-    if (!parsed.success) throw new UnprocessableEntityException(parsed.error.flatten());
+    if (!parsed.success)
+      throw new UnprocessableEntityException(parsed.error.flatten());
     return this.service.addMessage(id, parsed.data, this.user(req));
   }
 
@@ -69,7 +71,8 @@ export class TicketsController {
     @Req() req: Request,
   ) {
     const parsed = UpdateTicketStatusSchema.safeParse(body);
-    if (!parsed.success) throw new UnprocessableEntityException(parsed.error.flatten());
+    if (!parsed.success)
+      throw new UnprocessableEntityException(parsed.error.flatten());
     return this.service.updateStatus(id, parsed.data, this.user(req));
   }
 }

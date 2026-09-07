@@ -14,7 +14,12 @@ export class AcademicRepository {
 
   // ── Cursos ────────────────────────────────────────────────────────────────
 
-  createCourse(data: { tenantId: string; name: string; code: string; description?: string }) {
+  createCourse(data: {
+    tenantId: string;
+    name: string;
+    code: string;
+    description?: string;
+  }) {
     return this.prisma.course.create({ data });
   }
 
@@ -76,7 +81,9 @@ export class AcademicRepository {
       where: { id },
       include: {
         ...CLASS_INCLUDE,
-        teacherAssignments: { include: { teacher: { select: { id: true, email: true } } } },
+        teacherAssignments: {
+          include: { teacher: { select: { id: true, email: true } } },
+        },
       },
     });
   }
@@ -99,7 +106,9 @@ export class AcademicRepository {
 
   findClassesByStudent(studentId: string) {
     return this.prisma.class.findMany({
-      where: { enrollments: { some: { studentId, status: EnrollmentStatus.ATIVA } } },
+      where: {
+        enrollments: { some: { studentId, status: EnrollmentStatus.ATIVA } },
+      },
       include: CLASS_INCLUDE,
       orderBy: { createdAt: 'desc' },
     });

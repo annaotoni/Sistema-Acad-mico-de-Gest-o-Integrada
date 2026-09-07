@@ -20,12 +20,14 @@ export class AuditService {
         entityId: data.entityId,
         userId: data.userId,
         action: data.action,
-        oldValue: data.oldValue !== undefined
-          ? (data.oldValue as Prisma.InputJsonValue)
-          : undefined,
-        newValue: data.newValue !== undefined
-          ? (data.newValue as Prisma.InputJsonValue)
-          : undefined,
+        oldValue:
+          data.oldValue !== undefined
+            ? (data.oldValue as Prisma.InputJsonValue)
+            : undefined,
+        newValue:
+          data.newValue !== undefined
+            ? (data.newValue as Prisma.InputJsonValue)
+            : undefined,
       },
     });
   }

@@ -1,6 +1,11 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { ILlmProvider, LlmMessage, LlmResponse, LlmTool } from './llm-provider.interface';
+import type {
+  ILlmProvider,
+  LlmMessage,
+  LlmResponse,
+  LlmTool,
+} from './llm-provider.interface';
 
 @Injectable()
 export class AnthropicProvider implements ILlmProvider {
@@ -9,10 +14,17 @@ export class AnthropicProvider implements ILlmProvider {
 
   constructor(config: ConfigService) {
     this.apiKey = config.getOrThrow<string>('ANTHROPIC_API_KEY');
-    this.model = config.get<string>('ANTHROPIC_MODEL', 'claude-haiku-4-5-20251001');
+    this.model = config.get<string>(
+      'ANTHROPIC_MODEL',
+      'claude-haiku-4-5-20251001',
+    );
   }
 
-  async chat(messages: LlmMessage[], tools?: LlmTool[], systemPrompt?: string): Promise<LlmResponse> {
+  async chat(
+    messages: LlmMessage[],
+    tools?: LlmTool[],
+    systemPrompt?: string,
+  ): Promise<LlmResponse> {
     const body: Record<string, unknown> = {
       model: this.model,
       max_tokens: 1024,
@@ -32,7 +44,9 @@ export class AnthropicProvider implements ILlmProvider {
     });
 
     if (!res.ok) {
-      throw new InternalServerErrorException(`Anthropic API error ${res.status}: ${await res.text()}`);
+      throw new InternalServerErrorException(
+        `Anthropic API error ${res.status}: ${await res.text()}`,
+      );
     }
 
     return res.json() as Promise<LlmResponse>;

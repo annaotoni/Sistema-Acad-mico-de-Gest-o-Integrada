@@ -7,7 +7,10 @@ const mockPrisma = {
   enrollment: { findUnique: jest.fn() },
 };
 
-const buildCtx = (user: object, params: Record<string, string> = {}): ExecutionContext =>
+const buildCtx = (
+  user: object,
+  params: Record<string, string> = {},
+): ExecutionContext =>
   ({
     switchToHttp: () => ({ getRequest: () => ({ user, params }) }),
     getHandler: () => jest.fn(),

@@ -23,7 +23,11 @@ export class ContentRepository {
         classId,
         ...(onlyPublished ? { status: ContentStatus.PUBLISHED } : {}),
       },
-      include: { materials: onlyPublished ? { where: { status: ContentStatus.PUBLISHED } } : true },
+      include: {
+        materials: onlyPublished
+          ? { where: { status: ContentStatus.PUBLISHED } }
+          : true,
+      },
       orderBy: { order: 'asc' },
     });
   }

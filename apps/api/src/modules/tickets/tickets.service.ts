@@ -14,7 +14,10 @@ import type { CreateMessageDto } from './dto/create-message.dto';
 import type { UpdateTicketStatusDto } from './dto/update-ticket-status.dto';
 
 // Transições válidas: ABERTO e EM_ATENDIMENTO podem avançar; terminais não
-const TERMINAL = new Set<TicketStatus>([TicketStatus.RESOLVIDO, TicketStatus.FECHADO]);
+const TERMINAL = new Set<TicketStatus>([
+  TicketStatus.RESOLVIDO,
+  TicketStatus.FECHADO,
+]);
 
 @Injectable()
 export class TicketsService {
@@ -24,8 +27,15 @@ export class TicketsService {
   ) {}
 
   async create(dto: CreateTicketDto, user: AccessTokenPayload) {
-    const ticket = await this.repo.create({ studentId: user.sub, subject: dto.subject });
-    await this.repo.addMessage({ ticketId: ticket.id, authorId: user.sub, content: dto.message });
+    const ticket = await this.repo.create({
+      studentId: user.sub,
+      subject: dto.subject,
+    });
+    await this.repo.addMessage({
+      ticketId: ticket.id,
+      authorId: user.sub,
+      content: dto.message,
+    });
     return this.repo.findById(ticket.id);
   }
 
@@ -38,22 +48,33 @@ export class TicketsService {
   async getTicket(id: string, user: AccessTokenPayload) {
     const ticket = await this.repo.findById(id);
     if (!ticket) throw new NotFoundException('Protocolo não encontrado');
-    if (user.role === Role.ALUNO && ticket.studentId !== user.sub) throw new ForbiddenException();
+    if (user.role === Role.ALUNO && ticket.studentId !== user.sub)
+      throw new ForbiddenException();
     return ticket;
   }
 
-  async addMessage(id: string, dto: CreateMessageDto, user: AccessTokenPayload) {
+  async addMessage(
+    id: string,
+    dto: CreateMessageDto,
+    user: AccessTokenPayload,
+  ) {
     const ticket = await this.repo.findById(id);
     if (!ticket) throw new NotFoundException('Protocolo não encontrado');
-    if (user.role === Role.ALUNO && ticket.studentId !== user.sub) throw new ForbiddenException();
-    if (TERMINAL.has(ticket.status)) throw new BadRequestException('Protocolo encerrado');
+    if (user.role === Role.ALUNO && ticket.studentId !== user.sub)
+      throw new ForbiddenException();
+    if (TERMINAL.has(ticket.status))
+      throw new BadRequestException('Protocolo encerrado');
 
     // Secretaria ao responder: mover para EM_ATENDIMENTO se ainda ABERTO
     if (user.role !== Role.ALUNO && ticket.status === TicketStatus.ABERTO) {
       await this.repo.updateStatus(id, TicketStatus.EM_ATENDIMENTO);
     }
 
-    const message = await this.repo.addMessage({ ticketId: id, authorId: user.sub, content: dto.content });
+    const message = await this.repo.addMessage({
+      ticketId: id,
+      authorId: user.sub,
+      content: dto.content,
+    });
 
     // Notifica o aluno quando a secretaria responde
     if (user.role !== Role.ALUNO) {
@@ -68,10 +89,15 @@ export class TicketsService {
     return message;
   }
 
-  async updateStatus(id: string, dto: UpdateTicketStatusDto, actor: AccessTokenPayload) {
+  async updateStatus(
+    id: string,
+    dto: UpdateTicketStatusDto,
+    _actor: AccessTokenPayload,
+  ) {
     const ticket = await this.repo.findById(id);
     if (!ticket) throw new NotFoundException('Protocolo não encontrado');
-    if (TERMINAL.has(ticket.status)) throw new BadRequestException('Protocolo já encerrado');
+    if (TERMINAL.has(ticket.status))
+      throw new BadRequestException('Protocolo já encerrado');
     return this.repo.updateStatus(id, dto.status);
   }
 }

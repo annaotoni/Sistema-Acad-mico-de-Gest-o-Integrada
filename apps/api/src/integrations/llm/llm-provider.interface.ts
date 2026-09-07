@@ -25,11 +25,15 @@ export interface LlmTool {
 
 export interface LlmResponse {
   content: LlmContentBlock[];
-  stop_reason: 'end_turn' | 'tool_use' | string;
+  stop_reason: 'end_turn' | 'tool_use' | (string & {});
 }
 
 export const LLM_PROVIDER = 'LLM_PROVIDER';
 
 export interface ILlmProvider {
-  chat(messages: LlmMessage[], tools?: LlmTool[], systemPrompt?: string): Promise<LlmResponse>;
+  chat(
+    messages: LlmMessage[],
+    tools?: LlmTool[],
+    systemPrompt?: string,
+  ): Promise<LlmResponse>;
 }

@@ -25,7 +25,9 @@ describe('RoleGuard', () => {
   });
 
   it('passa quando role do usuário está na lista', () => {
-    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['PROFESSOR', 'ADMIN']);
+    jest
+      .spyOn(reflector, 'getAllAndOverride')
+      .mockReturnValue(['PROFESSOR', 'ADMIN']);
     expect(guard.canActivate(buildCtx({ role: 'PROFESSOR' }))).toBe(true);
   });
 

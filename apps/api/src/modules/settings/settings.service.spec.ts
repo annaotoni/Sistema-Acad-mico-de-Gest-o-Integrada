@@ -3,7 +3,12 @@ import type { AccessTokenPayload } from '../../common/interfaces/access-token-pa
 import { SettingsService } from './settings.service';
 
 const mockPrisma = { feature: { findMany: jest.fn() } };
-const mockRedis = { get: jest.fn(), set: jest.fn(), del: jest.fn(), keys: jest.fn() };
+const mockRedis = {
+  get: jest.fn(),
+  set: jest.fn(),
+  del: jest.fn(),
+  keys: jest.fn(),
+};
 
 const adminUser: AccessTokenPayload = {
   sub: 'u1',
@@ -23,7 +28,12 @@ describe('SettingsService', () => {
   });
 
   it('retorna resultado cacheado quando Redis tem a chave', async () => {
-    const cached = { tabs: [{ key: 'financeiro', name: 'Financeiro', order: 0, configJson: null }], config: {} };
+    const cached = {
+      tabs: [
+        { key: 'financeiro', name: 'Financeiro', order: 0, configJson: null },
+      ],
+      config: {},
+    };
     mockRedis.get.mockResolvedValue(JSON.stringify(cached));
 
     const result = await service.resolveFeatures(adminUser);
@@ -68,7 +78,15 @@ describe('SettingsService', () => {
         key: 'assistant',
         name: 'Assistente',
         isCore: false,
-        configs: [{ scopeType: FeatureScopeType.TENANT, enabled: false, order: 0, labelOverride: null, configJson: null }],
+        configs: [
+          {
+            scopeType: FeatureScopeType.TENANT,
+            enabled: false,
+            order: 0,
+            labelOverride: null,
+            configJson: null,
+          },
+        ],
       },
     ]);
 
@@ -85,8 +103,20 @@ describe('SettingsService', () => {
         name: 'Assistente',
         isCore: false,
         configs: [
-          { scopeType: FeatureScopeType.TENANT, enabled: false, order: 0, labelOverride: null, configJson: null },
-          { scopeType: FeatureScopeType.ROLE, enabled: true, order: 1, labelOverride: 'Assistente Admin', configJson: null },
+          {
+            scopeType: FeatureScopeType.TENANT,
+            enabled: false,
+            order: 0,
+            labelOverride: null,
+            configJson: null,
+          },
+          {
+            scopeType: FeatureScopeType.ROLE,
+            enabled: true,
+            order: 1,
+            labelOverride: 'Assistente Admin',
+            configJson: null,
+          },
         ],
       },
     ]);
@@ -103,9 +133,15 @@ describe('SettingsService', () => {
   });
 
   it('invalida todo o cache do tenant quando sem role', async () => {
-    mockRedis.keys.mockResolvedValue(['features:t1:ADMIN', 'features:t1:ALUNO']);
+    mockRedis.keys.mockResolvedValue([
+      'features:t1:ADMIN',
+      'features:t1:ALUNO',
+    ]);
     mockRedis.del.mockResolvedValue(2);
     await service.invalidateCache('t1');
-    expect(mockRedis.del).toHaveBeenCalledWith('features:t1:ADMIN', 'features:t1:ALUNO');
+    expect(mockRedis.del).toHaveBeenCalledWith(
+      'features:t1:ADMIN',
+      'features:t1:ALUNO',
+    );
   });
 });

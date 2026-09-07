@@ -1,5 +1,11 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsISO8601, IsOptional, IsUUID, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsISO8601,
+  IsOptional,
+  IsUUID,
+  ValidateNested,
+} from 'class-validator';
 import { AttendanceEntryDto } from './attendance-entry.dto';
 
 export class RecordAttendanceDto {

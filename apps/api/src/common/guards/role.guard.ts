@@ -21,9 +21,7 @@ export class RoleGuard implements CanActivate {
     );
     if (!roles?.length) return true;
 
-    const user = context
-      .switchToHttp()
-      .getRequest<Request>()
+    const user = context.switchToHttp().getRequest<Request>()
       .user as AccessTokenPayload;
 
     if (!roles.includes(user.role)) {

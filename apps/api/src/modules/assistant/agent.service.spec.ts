@@ -15,15 +15,25 @@ const mockRag = { search: jest.fn() };
 const mockLlm = { chat: jest.fn() };
 
 const makeService = () =>
-  new AgentService(mockRepo as any, mockTools as any, mockRag as any, mockLlm as any);
+  new AgentService(mockRepo as any, mockTools as any, mockRag as any, mockLlm);
 
-const aluno = { sub: 'aluno-1', role: Role.ALUNO, tenantId: 'tenant-1', jti: '', iat: 0, exp: 0 };
+const aluno = {
+  sub: 'aluno-1',
+  role: Role.ALUNO,
+  tenantId: 'tenant-1',
+  jti: '',
+  iat: 0,
+  exp: 0,
+};
 
 beforeEach(() => jest.clearAllMocks());
 
 describe('chat', () => {
   it('cria nova conversa quando não existe conversationId', async () => {
-    mockRepo.createConversation.mockResolvedValue({ id: 'conv-1', messages: [] });
+    mockRepo.createConversation.mockResolvedValue({
+      id: 'conv-1',
+      messages: [],
+    });
     mockRepo.addMessage.mockResolvedValue({});
     mockRag.search.mockResolvedValue('');
     mockLlm.chat.mockResolvedValue({
@@ -38,7 +48,10 @@ describe('chat', () => {
   });
 
   it('executa tool e retorna resposta final', async () => {
-    mockRepo.createConversation.mockResolvedValue({ id: 'conv-2', messages: [] });
+    mockRepo.createConversation.mockResolvedValue({
+      id: 'conv-2',
+      messages: [],
+    });
     mockRepo.addMessage.mockResolvedValue({});
     mockRag.search.mockResolvedValue('');
     mockTools.execute.mockResolvedValue([{ id: 'inv-1', status: 'PENDENTE' }]);
@@ -47,7 +60,9 @@ describe('chat', () => {
     mockLlm.chat
       .mockResolvedValueOnce({
         stop_reason: 'tool_use',
-        content: [{ type: 'tool_use', id: 'tu-1', name: 'consultarFaturas', input: {} }],
+        content: [
+          { type: 'tool_use', id: 'tu-1', name: 'consultarFaturas', input: {} },
+        ],
       })
       // Segunda chamada: LLM responde com texto
       .mockResolvedValueOnce({
@@ -55,13 +70,24 @@ describe('chat', () => {
         content: [{ type: 'text', text: 'Você tem 1 fatura pendente.' }],
       });
 
-    const result = await makeService().chat(undefined, 'Minhas faturas?', aluno);
-    expect(mockTools.execute).toHaveBeenCalledWith('consultarFaturas', {}, aluno);
+    const result = await makeService().chat(
+      undefined,
+      'Minhas faturas?',
+      aluno,
+    );
+    expect(mockTools.execute).toHaveBeenCalledWith(
+      'consultarFaturas',
+      {},
+      aluno,
+    );
     expect(result.reply).toBe('Você tem 1 fatura pendente.');
   });
 
   it('encerra após máximo de iterações sem loop infinito', async () => {
-    mockRepo.createConversation.mockResolvedValue({ id: 'conv-3', messages: [] });
+    mockRepo.createConversation.mockResolvedValue({
+      id: 'conv-3',
+      messages: [],
+    });
     mockRepo.addMessage.mockResolvedValue({});
     mockRag.search.mockResolvedValue('');
     mockTools.execute.mockResolvedValue({});
@@ -69,16 +95,23 @@ describe('chat', () => {
     // Sempre retorna tool_use — deve parar em 5 iterações
     mockLlm.chat.mockResolvedValue({
       stop_reason: 'tool_use',
-      content: [{ type: 'tool_use', id: 'tu-1', name: 'consultarFaturas', input: {} }],
+      content: [
+        { type: 'tool_use', id: 'tu-1', name: 'consultarFaturas', input: {} },
+      ],
     });
 
     const result = await makeService().chat(undefined, 'loop?', aluno);
     expect(mockLlm.chat).toHaveBeenCalledTimes(5);
-    expect(result.reply).toBe('Não consegui processar sua solicitação. Tente novamente.');
+    expect(result.reply).toBe(
+      'Não consegui processar sua solicitação. Tente novamente.',
+    );
   });
 
   it('enriquece system prompt com contexto RAG quando disponível', async () => {
-    mockRepo.createConversation.mockResolvedValue({ id: 'conv-4', messages: [] });
+    mockRepo.createConversation.mockResolvedValue({
+      id: 'conv-4',
+      messages: [],
+    });
     mockRepo.addMessage.mockResolvedValue({});
     mockRag.search.mockResolvedValue('Calendário: provas em dezembro.');
     mockLlm.chat.mockResolvedValue({

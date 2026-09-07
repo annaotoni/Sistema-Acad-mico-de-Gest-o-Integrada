@@ -27,7 +27,11 @@ export class NotificationProcessor extends WorkerHost {
     await this.repo.createNotification({ userId, type, title, body });
 
     // Verifica preferência de e-mail (padrão: habilitado)
-    const pref = await this.repo.findPref(userId, NotificationChannel.EMAIL, type);
+    const pref = await this.repo.findPref(
+      userId,
+      NotificationChannel.EMAIL,
+      type,
+    );
     if (pref?.enabled === false) return;
 
     const user = await this.prisma.user.findUnique({
@@ -41,7 +45,9 @@ export class NotificationProcessor extends WorkerHost {
       await this.mail.sendNotificationEmail(user.email, title, title, body);
     } catch (err) {
       // E-mail falhou mas a notificação in-app já foi salva
-      this.logger.warn(`Falha ao enviar e-mail para ${user.email}: ${String(err)}`);
+      this.logger.warn(
+        `Falha ao enviar e-mail para ${user.email}: ${String(err)}`,
+      );
     }
   }
 }

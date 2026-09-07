@@ -48,7 +48,8 @@ export class UsersController {
     @CurrentUser() actor: AccessTokenPayload,
   ) {
     const parsed = UpdateRoleSchema.safeParse(body);
-    if (!parsed.success) throw new UnprocessableEntityException(parsed.error.flatten());
+    if (!parsed.success)
+      throw new UnprocessableEntityException(parsed.error.flatten());
     return this.usersService.updateRole(id, parsed.data.role, actor.sub);
   }
 }

@@ -1,16 +1,35 @@
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
-import { ClassStatus, EnrollmentStatus } from '@prisma/client';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
+import { ClassStatus } from '@prisma/client';
 import type { AccessTokenPayload } from '../../common/interfaces/access-token-payload';
 import { AcademicService } from './academic.service';
 
 const adminUser: AccessTokenPayload = {
-  sub: 'u1', jti: 'j1', role: 'ADMIN', tenantId: 't1', iat: 0, exp: 0,
+  sub: 'u1',
+  jti: 'j1',
+  role: 'ADMIN',
+  tenantId: 't1',
+  iat: 0,
+  exp: 0,
 };
 const professorUser: AccessTokenPayload = {
-  sub: 'p1', jti: 'j2', role: 'PROFESSOR', tenantId: 't1', iat: 0, exp: 0,
+  sub: 'p1',
+  jti: 'j2',
+  role: 'PROFESSOR',
+  tenantId: 't1',
+  iat: 0,
+  exp: 0,
 };
 const alunoUser: AccessTokenPayload = {
-  sub: 'a1', jti: 'j3', role: 'ALUNO', tenantId: 't1', iat: 0, exp: 0,
+  sub: 'a1',
+  jti: 'j3',
+  role: 'ALUNO',
+  tenantId: 't1',
+  iat: 0,
+  exp: 0,
 };
 
 const mockRepo = {
@@ -49,7 +68,10 @@ describe('AcademicService', () => {
 
   describe('updateClassStatus', () => {
     it('ABERTA → EM_ANDAMENTO: transição válida', async () => {
-      mockRepo.findClassById.mockResolvedValue({ status: ClassStatus.ABERTA, maxStudents: null });
+      mockRepo.findClassById.mockResolvedValue({
+        status: ClassStatus.ABERTA,
+        maxStudents: null,
+      });
       mockRepo.updateClassStatus.mockResolvedValue({});
       await expect(
         service.updateClassStatus('c1', ClassStatus.EM_ANDAMENTO),
@@ -57,7 +79,10 @@ describe('AcademicService', () => {
     });
 
     it('EM_ANDAMENTO → ENCERRADA: transição válida', async () => {
-      mockRepo.findClassById.mockResolvedValue({ status: ClassStatus.EM_ANDAMENTO, maxStudents: null });
+      mockRepo.findClassById.mockResolvedValue({
+        status: ClassStatus.EM_ANDAMENTO,
+        maxStudents: null,
+      });
       mockRepo.updateClassStatus.mockResolvedValue({});
       await expect(
         service.updateClassStatus('c1', ClassStatus.ENCERRADA),
@@ -65,14 +90,20 @@ describe('AcademicService', () => {
     });
 
     it('ABERTA → ENCERRADA: transição inválida', async () => {
-      mockRepo.findClassById.mockResolvedValue({ status: ClassStatus.ABERTA, maxStudents: null });
+      mockRepo.findClassById.mockResolvedValue({
+        status: ClassStatus.ABERTA,
+        maxStudents: null,
+      });
       await expect(
         service.updateClassStatus('c1', ClassStatus.ENCERRADA),
       ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('ENCERRADA → qualquer: transição inválida', async () => {
-      mockRepo.findClassById.mockResolvedValue({ status: ClassStatus.ENCERRADA, maxStudents: null });
+      mockRepo.findClassById.mockResolvedValue({
+        status: ClassStatus.ENCERRADA,
+        maxStudents: null,
+      });
       await expect(
         service.updateClassStatus('c1', ClassStatus.ABERTA),
       ).rejects.toBeInstanceOf(BadRequestException);
@@ -90,14 +121,20 @@ describe('AcademicService', () => {
 
   describe('enroll', () => {
     it('bloqueia matrícula em turma ENCERRADA', async () => {
-      mockRepo.findClassById.mockResolvedValue({ status: ClassStatus.ENCERRADA, maxStudents: null });
+      mockRepo.findClassById.mockResolvedValue({
+        status: ClassStatus.ENCERRADA,
+        maxStudents: null,
+      });
       await expect(
         service.enroll('c1', { studentId: 'a1' }),
       ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('bloqueia quando turma está sem vagas', async () => {
-      mockRepo.findClassById.mockResolvedValue({ status: ClassStatus.ABERTA, maxStudents: 2 });
+      mockRepo.findClassById.mockResolvedValue({
+        status: ClassStatus.ABERTA,
+        maxStudents: 2,
+      });
       mockRepo.countActiveEnrollments.mockResolvedValue(2);
       await expect(
         service.enroll('c1', { studentId: 'a1' }),
@@ -105,7 +142,10 @@ describe('AcademicService', () => {
     });
 
     it('bloqueia aluno já matriculado', async () => {
-      mockRepo.findClassById.mockResolvedValue({ status: ClassStatus.ABERTA, maxStudents: null });
+      mockRepo.findClassById.mockResolvedValue({
+        status: ClassStatus.ABERTA,
+        maxStudents: null,
+      });
       mockRepo.findEnrollment.mockResolvedValue({ id: 'e1' });
       await expect(
         service.enroll('c1', { studentId: 'a1' }),
@@ -113,13 +153,16 @@ describe('AcademicService', () => {
     });
 
     it('matricula com sucesso quando há vagas', async () => {
-      mockRepo.findClassById.mockResolvedValue({ status: ClassStatus.ABERTA, maxStudents: 10 });
+      mockRepo.findClassById.mockResolvedValue({
+        status: ClassStatus.ABERTA,
+        maxStudents: 10,
+      });
       mockRepo.countActiveEnrollments.mockResolvedValue(5);
       mockRepo.findEnrollment.mockResolvedValue(null);
       mockRepo.createEnrollment.mockResolvedValue({ id: 'e2' });
-      await expect(
-        service.enroll('c1', { studentId: 'a1' }),
-      ).resolves.toEqual({ id: 'e2' });
+      await expect(service.enroll('c1', { studentId: 'a1' })).resolves.toEqual({
+        id: 'e2',
+      });
     });
   });
 
@@ -149,18 +192,20 @@ describe('AcademicService', () => {
 
   describe('assignTeacher', () => {
     it('bloqueia vínculo em turma ENCERRADA', async () => {
-      mockRepo.findClassById.mockResolvedValue({ status: ClassStatus.ENCERRADA });
-      await expect(
-        service.assignTeacher('c1', 'p1'),
-      ).rejects.toBeInstanceOf(BadRequestException);
+      mockRepo.findClassById.mockResolvedValue({
+        status: ClassStatus.ENCERRADA,
+      });
+      await expect(service.assignTeacher('c1', 'p1')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
     });
 
     it('bloqueia professor já vinculado', async () => {
       mockRepo.findClassById.mockResolvedValue({ status: ClassStatus.ABERTA });
       mockRepo.findTeacherAssignment.mockResolvedValue({ id: 'ta1' });
-      await expect(
-        service.assignTeacher('c1', 'p1'),
-      ).rejects.toBeInstanceOf(ConflictException);
+      await expect(service.assignTeacher('c1', 'p1')).rejects.toBeInstanceOf(
+        ConflictException,
+      );
     });
   });
 });

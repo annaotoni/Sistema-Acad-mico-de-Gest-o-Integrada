@@ -2,7 +2,14 @@ import type { AccessTokenPayload } from '../../common/interfaces/access-token-pa
 import { NOTIFICATION_EVENTS } from './notifications-events';
 import { NotificationsService } from './notifications.service';
 
-const user: AccessTokenPayload = { sub: 'u1', jti: 'j1', role: 'ALUNO', tenantId: 't1', iat: 0, exp: 0 };
+const user: AccessTokenPayload = {
+  sub: 'u1',
+  jti: 'j1',
+  role: 'ALUNO',
+  tenantId: 't1',
+  iat: 0,
+  exp: 0,
+};
 
 const mockQueue = { add: jest.fn() };
 const mockRepo = {
@@ -24,8 +31,16 @@ describe('NotificationsService', () => {
 
   it('publish enfileira o evento no BullMQ', async () => {
     mockQueue.add.mockResolvedValue({ id: '1' });
-    await service.publish({ type: NOTIFICATION_EVENTS.NOTA_LANCADA, userId: 'u1', title: 'Nota', body: 'Sua nota foi lançada' });
-    expect(mockQueue.add).toHaveBeenCalledWith('send', expect.objectContaining({ type: 'nota.lancada' }));
+    await service.publish({
+      type: NOTIFICATION_EVENTS.NOTA_LANCADA,
+      userId: 'u1',
+      title: 'Nota',
+      body: 'Sua nota foi lançada',
+    });
+    expect(mockQueue.add).toHaveBeenCalledWith(
+      'send',
+      expect.objectContaining({ type: 'nota.lancada' }),
+    );
   });
 
   it('countUnread retorna objeto { count }', async () => {
@@ -42,7 +57,11 @@ describe('NotificationsService', () => {
 
   it('updatePref faz upsert com dados do usuário logado', async () => {
     mockRepo.upsertPref.mockResolvedValue({});
-    await service.updatePref(user, { channel: 'EMAIL', eventType: 'nota.lancada', enabled: false });
+    await service.updatePref(user, {
+      channel: 'EMAIL',
+      eventType: 'nota.lancada',
+      enabled: false,
+    });
     expect(mockRepo.upsertPref).toHaveBeenCalledWith(
       expect.objectContaining({ userId: 'u1', enabled: false }),
     );

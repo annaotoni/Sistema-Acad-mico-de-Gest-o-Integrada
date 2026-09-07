@@ -28,14 +28,19 @@ export class AssistantController {
   constructor(private readonly agent: AgentService) {}
 
   private user(req: Request): AccessTokenPayload {
-    return (req as any).user as AccessTokenPayload;
+    return (req as unknown as { user: AccessTokenPayload }).user;
   }
 
   @Post('chat')
   chat(@Body() body: unknown, @Req() req: Request) {
     const parsed = ChatSchema.safeParse(body);
-    if (!parsed.success) throw new UnprocessableEntityException(parsed.error.flatten());
-    return this.agent.chat(parsed.data.conversationId, parsed.data.message, this.user(req));
+    if (!parsed.success)
+      throw new UnprocessableEntityException(parsed.error.flatten());
+    return this.agent.chat(
+      parsed.data.conversationId,
+      parsed.data.message,
+      this.user(req),
+    );
   }
 
   @Get('conversations')

@@ -12,7 +12,7 @@ export class RagService {
   // Busca conhecimento institucional por similaridade textual
   async search(query: string, tenantId: string | null): Promise<string> {
     try {
-      const rows = await (this.prisma as any).$queryRaw<{ content: string }[]>`
+      const rows = await this.prisma.$queryRaw<{ content: string }[]>`
         SELECT content
         FROM knowledge_base
         WHERE tenant_id = ${tenantId}
@@ -36,7 +36,7 @@ export class RagService {
     content: string;
     source: string;
   }): Promise<void> {
-    await (this.prisma as any).$executeRaw`
+    await this.prisma.$executeRaw`
       INSERT INTO knowledge_base (id, tenant_id, title, content, source, created_at)
       VALUES (gen_random_uuid(), ${data.tenantId}, ${data.title}, ${data.content}, ${data.source}, now())
       ON CONFLICT (tenant_id, source) DO UPDATE

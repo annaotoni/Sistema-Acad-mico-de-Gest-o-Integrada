@@ -30,14 +30,15 @@ export class LiveClassesController {
   constructor(private readonly service: LiveClassesService) {}
 
   private user(req: Request): AccessTokenPayload {
-    return (req as any).user as AccessTokenPayload;
+    return (req as unknown as { user: AccessTokenPayload }).user;
   }
 
   @Post()
   @Roles(Role.PROFESSOR, Role.ADMIN, Role.SECRETARIA)
   create(@Body() body: unknown, @Req() req: Request) {
     const parsed = CreateLiveClassSchema.safeParse(body);
-    if (!parsed.success) throw new UnprocessableEntityException(parsed.error.flatten());
+    if (!parsed.success)
+      throw new UnprocessableEntityException(parsed.error.flatten());
     return this.service.create(parsed.data, this.user(req));
   }
 
@@ -50,7 +51,10 @@ export class LiveClassesController {
 
   @Get('class/:classId')
   @RequireScope('class')
-  listByClass(@Param('classId', ParseUUIDPipe) classId: string, @Req() req: Request) {
+  listByClass(
+    @Param('classId', ParseUUIDPipe) classId: string,
+    @Req() req: Request,
+  ) {
     return this.service.listByClass(classId, this.user(req));
   }
 
@@ -62,7 +66,8 @@ export class LiveClassesController {
     @Req() req: Request,
   ) {
     const parsed = UpdateLiveClassSchema.safeParse(body);
-    if (!parsed.success) throw new UnprocessableEntityException(parsed.error.flatten());
+    if (!parsed.success)
+      throw new UnprocessableEntityException(parsed.error.flatten());
     return this.service.update(id, parsed.data, this.user(req));
   }
 }

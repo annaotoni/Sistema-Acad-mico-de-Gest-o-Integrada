@@ -27,14 +27,15 @@ export class DocumentsController {
   constructor(private readonly service: DocumentsService) {}
 
   private user(req: Request): AccessTokenPayload {
-    return (req as any).user as AccessTokenPayload;
+    return (req as unknown as { user: AccessTokenPayload }).user;
   }
 
   @Post()
   @Roles(Role.ALUNO)
   create(@Body() body: unknown, @Req() req: Request) {
     const parsed = RequestDocumentSchema.safeParse(body);
-    if (!parsed.success) throw new UnprocessableEntityException(parsed.error.flatten());
+    if (!parsed.success)
+      throw new UnprocessableEntityException(parsed.error.flatten());
     return this.service.create(parsed.data, this.user(req));
   }
 
@@ -56,7 +57,8 @@ export class DocumentsController {
     @Req() req: Request,
   ) {
     const parsed = ReviewDocumentSchema.safeParse(body);
-    if (!parsed.success) throw new UnprocessableEntityException(parsed.error.flatten());
+    if (!parsed.success)
+      throw new UnprocessableEntityException(parsed.error.flatten());
     return this.service.review(id, parsed.data, this.user(req));
   }
 }

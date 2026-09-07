@@ -238,7 +238,12 @@ export class AuthService {
     }
 
     const jti = randomUUID();
-    const accessToken = this.jwtService.sign({ sub: user.id, jti, role: user.role, tenantId: user.tenantId });
+    const accessToken = this.jwtService.sign({
+      sub: user.id,
+      jti,
+      role: user.role,
+      tenantId: user.tenantId,
+    });
     const rawRefreshToken = randomBytes(32).toString('hex');
 
     await this.prisma.refreshToken.create({
@@ -359,7 +364,12 @@ export class AuthService {
       where: { id: tokenRecord.userId },
       select: { role: true, tenantId: true },
     });
-    const accessToken = this.jwtService.sign({ sub: tokenRecord.userId, jti, role, tenantId });
+    const accessToken = this.jwtService.sign({
+      sub: tokenRecord.userId,
+      jti,
+      role,
+      tenantId,
+    });
 
     return { accessToken, refreshToken: rawRefreshToken };
   }
@@ -580,7 +590,12 @@ export class AuthService {
     }
 
     const jti = randomUUID();
-    const accessToken = this.jwtService.sign({ sub: userId, jti, role: user.role, tenantId: user.tenantId });
+    const accessToken = this.jwtService.sign({
+      sub: userId,
+      jti,
+      role: user.role,
+      tenantId: user.tenantId,
+    });
     const rawRefreshToken = randomBytes(32).toString('hex');
 
     await this.prisma.$transaction([

@@ -27,14 +27,15 @@ export class FinanceController {
   constructor(private readonly service: FinanceService) {}
 
   private user(req: Request): AccessTokenPayload {
-    return (req as any).user as AccessTokenPayload;
+    return (req as unknown as { user: AccessTokenPayload }).user;
   }
 
   @Post('invoices')
   @Roles(Role.ADMIN, Role.SECRETARIA)
   createInvoice(@Body() body: unknown, @Req() req: Request) {
     const parsed = CreateInvoiceSchema.safeParse(body);
-    if (!parsed.success) throw new UnprocessableEntityException(parsed.error.flatten());
+    if (!parsed.success)
+      throw new UnprocessableEntityException(parsed.error.flatten());
     return this.service.createInvoice(parsed.data, this.user(req));
   }
 
@@ -66,7 +67,8 @@ export class FinanceController {
     @Req() req: Request,
   ) {
     const parsed = ManualPaymentSchema.safeParse(body);
-    if (!parsed.success) throw new UnprocessableEntityException(parsed.error.flatten());
+    if (!parsed.success)
+      throw new UnprocessableEntityException(parsed.error.flatten());
     return this.service.recordManualPayment(id, parsed.data, this.user(req));
   }
 }

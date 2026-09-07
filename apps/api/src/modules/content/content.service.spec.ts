@@ -14,8 +14,22 @@ const mockRepo = {
   updateMaterialStatus: jest.fn(),
 };
 
-const aluno: AccessTokenPayload = { sub: 'a1', jti: 'j1', role: 'ALUNO', tenantId: 't1', iat: 0, exp: 0 };
-const professor: AccessTokenPayload = { sub: 'p1', jti: 'j2', role: 'PROFESSOR', tenantId: 't1', iat: 0, exp: 0 };
+const aluno: AccessTokenPayload = {
+  sub: 'a1',
+  jti: 'j1',
+  role: 'ALUNO',
+  tenantId: 't1',
+  iat: 0,
+  exp: 0,
+};
+const professor: AccessTokenPayload = {
+  sub: 'p1',
+  jti: 'j2',
+  role: 'PROFESSOR',
+  tenantId: 't1',
+  iat: 0,
+  exp: 0,
+};
 
 describe('ContentService', () => {
   let service: ContentService;
@@ -25,21 +39,21 @@ describe('ContentService', () => {
     jest.clearAllMocks();
   });
 
-  it('listLessons filtra PUBLISHED para ALUNO', () => {
+  it('listLessons filtra PUBLISHED para ALUNO', async () => {
     mockRepo.findLessonsByClass.mockResolvedValue([]);
-    service.listLessons('c1', aluno);
+    await service.listLessons('c1', aluno);
     expect(mockRepo.findLessonsByClass).toHaveBeenCalledWith('c1', true);
   });
 
-  it('listLessons retorna todos para PROFESSOR', () => {
+  it('listLessons retorna todos para PROFESSOR', async () => {
     mockRepo.findLessonsByClass.mockResolvedValue([]);
-    service.listLessons('c1', professor);
+    await service.listLessons('c1', professor);
     expect(mockRepo.findLessonsByClass).toHaveBeenCalledWith('c1', false);
   });
 
-  it('listMaterials filtra PUBLISHED para ALUNO', () => {
+  it('listMaterials filtra PUBLISHED para ALUNO', async () => {
     mockRepo.findMaterialsByClass.mockResolvedValue([]);
-    service.listMaterials('c1', aluno);
+    await service.listMaterials('c1', aluno);
     expect(mockRepo.findMaterialsByClass).toHaveBeenCalledWith('c1', true);
   });
 

@@ -9,7 +9,13 @@ import { ClassesController } from './classes.controller';
 
 @Module({
   controllers: [AcademicController, ClassesController],
-  providers: [AcademicService, AcademicRepository, FeatureGuard, RoleGuard, ScopeGuard],
+  providers: [
+    AcademicService,
+    AcademicRepository,
+    FeatureGuard,
+    RoleGuard,
+    ScopeGuard,
+  ],
   exports: [AcademicService],
 })
 export class AcademicModule {}

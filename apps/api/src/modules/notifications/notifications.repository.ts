@@ -29,7 +29,7 @@ export class NotificationsRepository {
     });
   }
 
-  markAsRead(id: string, userId: string) {
+  markAsRead(id: string, _userId: string) {
     return this.prisma.notification.update({
       where: { id },
       data: { readAt: new Date() },
