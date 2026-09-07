@@ -56,8 +56,13 @@ export class AttendanceService {
     );
   }
 
-  listAttendance(classId: string) {
-    return this.repo.findByClass(classId);
+  async listAttendance(classId: string, user?: AccessTokenPayload) {
+    const records = await this.repo.findByClass(classId);
+    // Aluno vê apenas sua própria frequência; outros perfis veem a turma inteira
+    if (user?.role === 'ALUNO') {
+      return records.filter((r) => r.studentId === user.sub);
+    }
+    return records;
   }
 
   async updateAttendance(

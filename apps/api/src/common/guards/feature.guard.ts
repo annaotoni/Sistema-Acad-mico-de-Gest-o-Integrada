@@ -10,13 +10,7 @@ import { Request } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { AccessTokenPayload } from '../interfaces/access-token-payload';
 import { FEATURE_KEY } from '../decorators/require-feature.decorator';
-
-const SCOPE_PRIORITY: Record<FeatureScopeType, number> = {
-  ROLE: 3,
-  COURSE: 2,
-  TENANT: 1,
-  GLOBAL: 0,
-};
+import { FEATURE_SCOPE_PRIORITY } from '../constants/feature-scope-priority';
 
 @Injectable()
 export class FeatureGuard implements CanActivate {
@@ -66,7 +60,9 @@ export class FeatureGuard implements CanActivate {
     if (!configs.length) return true;
 
     const resolved = configs.sort(
-      (a, b) => SCOPE_PRIORITY[b.scopeType] - SCOPE_PRIORITY[a.scopeType],
+      (a, b) =>
+        FEATURE_SCOPE_PRIORITY[b.scopeType] -
+        FEATURE_SCOPE_PRIORITY[a.scopeType],
     )[0];
 
     if (!resolved.enabled) throw new ForbiddenException('Feature desabilitada');

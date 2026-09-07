@@ -4,8 +4,6 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import Redis from 'ioredis';
 import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { validateEnv } from './config/env.validation';
 import { BullMqModule } from './infrastructure/bullmq/bullmq.module';
 import { RedisModule } from './infrastructure/redis/redis.module';
@@ -62,7 +60,6 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     WebhooksModule,
     JobsModule,
   ],
-  controllers: [AppController],
-  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

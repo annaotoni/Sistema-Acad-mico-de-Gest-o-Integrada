@@ -79,22 +79,37 @@ export class FinanceRepository {
   // Cria pagamento + marca fatura como PAGO em transação atômica — elimina race em retry do gateway
   async confirmPaymentAtomic(data: {
     invoiceId: string;
+    gatewayId: string;
     paidAt: Date;
     method: PaymentMethod;
     amount: number;
     gatewayPayload: Prisma.InputJsonValue;
   }): Promise<boolean> {
     return this.prisma.$transaction(async (tx) => {
+      // Idempotência: retry do gateway com mesmo event ID não gera pagamento duplicado
+      const existing = await tx.payment.findUnique({
+        where: { gatewayId: data.gatewayId },
+      });
+      if (existing) return false;
+
       const invoice = await tx.invoice.findUnique({
         where: { id: data.invoiceId },
         select: { status: true },
       });
       if (invoice?.status === InvoiceStatus.PAGO) return false;
 
-      const { invoiceId, ...paymentData } = data;
-      await tx.payment.create({ data: { invoiceId, ...paymentData } });
+      await tx.payment.create({
+        data: {
+          invoiceId: data.invoiceId,
+          gatewayId: data.gatewayId,
+          paidAt: data.paidAt,
+          method: data.method,
+          amount: data.amount,
+          gatewayPayload: data.gatewayPayload,
+        },
+      });
       await tx.invoice.update({
-        where: { id: invoiceId },
+        where: { id: data.invoiceId },
         data: { status: InvoiceStatus.PAGO },
       });
       return true;

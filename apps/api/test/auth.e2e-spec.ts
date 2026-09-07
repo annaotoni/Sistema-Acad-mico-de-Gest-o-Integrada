@@ -33,6 +33,7 @@ describe('Auth + Users (e2e)', () => {
   let prisma: {
     user: {
       findUnique: jest.Mock;
+      findUniqueOrThrow: jest.Mock;
       create: jest.Mock;
       update: jest.Mock;
     };

@@ -14,6 +14,7 @@ import type { Request } from 'express';
 import type { AccessTokenPayload } from '../../common/interfaces/access-token-payload';
 import { RequireFeature } from '../../common/decorators/require-feature.decorator';
 import { FeatureGuard } from '../../common/guards/feature.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AgentService } from './agent.service';
 
 const ChatSchema = z.object({
@@ -22,7 +23,7 @@ const ChatSchema = z.object({
 });
 
 @Controller('assistant')
-@UseGuards(FeatureGuard)
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @RequireFeature('assistant')
 export class AssistantController {
   constructor(private readonly agent: AgentService) {}

@@ -45,14 +45,13 @@ export class WebhooksController {
     @Headers('asaas-access-token') token: string,
     @Body() body: Record<string, unknown>,
   ) {
-    // Webhook sem autenticação de sessão — valida apenas assinatura do gateway
-    const tokenBuf = Buffer.from(token ?? '');
-    const expectedBuf = Buffer.from(this.asaasToken);
-    if (
-      !token ||
-      tokenBuf.length !== expectedBuf.length ||
-      !timingSafeEqual(tokenBuf, expectedBuf)
-    ) {
+    // Webhook sem autenticação de sessão — valida apenas assinatura do gateway.
+    // Buffer de tamanho fixo garante que timingSafeEqual sempre executa em tempo constante,
+    // sem leak do comprimento do token por análise de timing.
+    const expected = Buffer.from(this.asaasToken);
+    const received = Buffer.alloc(expected.length);
+    if (token) Buffer.from(token).copy(received, 0, 0, expected.length);
+    if (!token || !timingSafeEqual(received, expected)) {
       this.logger.warn('Webhook rejeitado: token inválido ou ausente');
       throw new UnauthorizedException();
     }

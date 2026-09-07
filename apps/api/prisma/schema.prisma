@@ -511,6 +511,8 @@ model Invoice {
 model Payment {
   id             String        @id @default(uuid()) @db.Uuid
   invoiceId      String        @map("invoice_id") @db.Uuid
+  // Único por evento do gateway — NULL para baixas manuais (permite múltiplos NULLs no PostgreSQL)
+  gatewayId      String?       @unique @map("gateway_id")
   paidAt         DateTime      @map("paid_at") @db.Timestamptz
   method         PaymentMethod
   amount         Decimal       @db.Decimal(10, 2)

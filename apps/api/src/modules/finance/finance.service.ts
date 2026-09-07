@@ -155,6 +155,7 @@ export class FinanceService {
 
     const confirmed = await this.repo.confirmPaymentAtomic({
       invoiceId: invoice.id,
+      gatewayId: data.gatewayId,
       paidAt: data.paidAt,
       method: data.method,
       amount: data.amount,

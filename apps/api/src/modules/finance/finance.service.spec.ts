@@ -214,7 +214,7 @@ describe('confirmPaymentFromWebhook', () => {
       rawPayload: {},
     });
     expect(mockRepo.confirmPaymentAtomic).toHaveBeenCalledWith(
-      expect.objectContaining({ invoiceId: 'inv-1' }),
+      expect.objectContaining({ invoiceId: 'inv-1', gatewayId: 'gw-1' }),
     );
   });
 });

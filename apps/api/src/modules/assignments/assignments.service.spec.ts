@@ -34,11 +34,13 @@ const mockRepo = {
   gradeSubmission: jest.fn(),
 };
 
+const mockAudit = { log: jest.fn().mockResolvedValue(undefined) };
+
 describe('AssignmentsService', () => {
   let service: AssignmentsService;
 
   beforeEach(() => {
-    service = new AssignmentsService(mockRepo as never);
+    service = new AssignmentsService(mockRepo as never, mockAudit as never);
     jest.clearAllMocks();
   });
 

@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { AuditService } from '../../common/audit/audit.service';
 import type { AccessTokenPayload } from '../../common/interfaces/access-token-payload';
 import { AssignmentsRepository } from './assignments.repository';
 import type { CreateAssignmentDto } from './dto/create-assignment.dto';
@@ -12,7 +13,10 @@ import type { GradeSubmissionDto } from './dto/grade-submission.dto';
 
 @Injectable()
 export class AssignmentsService {
-  constructor(private readonly repo: AssignmentsRepository) {}
+  constructor(
+    private readonly repo: AssignmentsRepository,
+    private readonly audit: AuditService,
+  ) {}
 
   createAssignment(classId: string, dto: CreateAssignmentDto) {
     return this.repo.createAssignment({
@@ -82,9 +86,20 @@ export class AssignmentsService {
       );
     }
 
-    return this.repo.gradeSubmission(submissionId, {
+    const graded = await this.repo.gradeSubmission(submissionId, {
       ...dto,
       gradedById: user.sub,
     });
+
+    await this.audit.log({
+      entity: 'Submission',
+      entityId: submissionId,
+      userId: user.sub,
+      action: 'GRADE',
+      oldValue: { score: submission.score, feedback: submission.feedback },
+      newValue: { score: dto.score, feedback: dto.feedback },
+    });
+
+    return graded;
   }
 }

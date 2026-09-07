@@ -4,6 +4,7 @@ import type Redis from 'ioredis';
 import { REDIS_CLIENT } from '../../infrastructure/redis/redis.provider';
 import type { AccessTokenPayload } from '../../common/interfaces/access-token-payload';
 import { PrismaService } from '../../prisma/prisma.service';
+import { FEATURE_SCOPE_PRIORITY } from '../../common/constants/feature-scope-priority';
 
 export interface FeatureTab {
   key: string;
@@ -16,13 +17,6 @@ export interface ResolvedFeatures {
   tabs: FeatureTab[];
   config: Record<string, unknown>;
 }
-
-const PRIORITY: Record<FeatureScopeType, number> = {
-  ROLE: 3,
-  COURSE: 2,
-  TENANT: 1,
-  GLOBAL: 0,
-};
 
 const CACHE_TTL_SEC = 300;
 
@@ -75,7 +69,9 @@ export class SettingsService {
       }
 
       const sorted = [...feature.configs].sort(
-        (a, b) => PRIORITY[b.scopeType] - PRIORITY[a.scopeType],
+        (a, b) =>
+          FEATURE_SCOPE_PRIORITY[b.scopeType] -
+          FEATURE_SCOPE_PRIORITY[a.scopeType],
       );
       const resolved = sorted[0];
 

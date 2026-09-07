@@ -103,7 +103,7 @@ export class ToolsService {
 
       case 'consultarFrequencia':
         if (!input['classId']) return { error: 'classId é obrigatório' };
-        return this.attendance.listAttendance(input['classId'] as string);
+        return this.attendance.listAttendance(input['classId'] as string, user);
 
       case 'proximasAulasAoVivo':
         return this.liveClasses.getUpcoming(user);

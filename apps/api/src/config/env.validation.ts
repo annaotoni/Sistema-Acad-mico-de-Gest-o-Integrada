@@ -17,7 +17,7 @@ const envSchema = z.object({
     .transform((value) => value === 'true'),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
-  MAIL_FROM: z.string().email().default('noreply@auth-system.local'),
+  MAIL_FROM: z.string().email().default('noreply@sistema-academico.local'),
 
   FRONTEND_URL: z.string().url().default('http://localhost:5173'),
   CORS_ORIGINS: z
@@ -49,7 +49,7 @@ const envSchema = z.object({
 
   // JWT
   JWT_ACCESS_SECRET: z.string().min(32),
-  JWT_REFRESH_SECRET: z.string().min(32).optional(),
+  JWT_REFRESH_SECRET: z.string().min(32),
 
   // Gateway de pagamento (Asaas)
   ASAAS_API_KEY: z.string().optional(),
