@@ -9,6 +9,7 @@ import { AppService } from './app.service';
 import { validateEnv } from './config/env.validation';
 import { BullMqModule } from './infrastructure/bullmq/bullmq.module';
 import { RedisModule } from './infrastructure/redis/redis.module';
+import { AcademicModule } from './modules/academic/academic.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -33,6 +34,7 @@ import { PrismaModule } from './prisma/prisma.module';
     PrismaModule,
     AuthModule,
     SettingsModule,
+    AcademicModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
