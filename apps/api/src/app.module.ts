@@ -10,15 +10,18 @@ import { validateEnv } from './config/env.validation';
 import { BullMqModule } from './infrastructure/bullmq/bullmq.module';
 import { RedisModule } from './infrastructure/redis/redis.module';
 import { AuditModule } from './common/audit/audit.module';
+import { JobsModule } from './jobs/jobs.module';
 import { AcademicModule } from './modules/academic/academic.module';
 import { AssignmentsModule } from './modules/assignments/assignments.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ContentModule } from './modules/content/content.module';
+import { FinanceModule } from './modules/finance/finance.module';
 import { GradesModule } from './modules/grades/grades.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
 
 @Module({
   imports: [
@@ -47,6 +50,9 @@ import { PrismaModule } from './prisma/prisma.module';
     GradesModule,
     AttendanceModule,
     NotificationsModule,
+    FinanceModule,
+    WebhooksModule,
+    JobsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
