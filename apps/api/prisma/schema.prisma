@@ -9,7 +9,7 @@ datasource db {
   extensions = [citext]
 }
 
-// ─── Enums ───────────────────────────────────────────────────────────────────
+// ─── Enums — Auth ─────────────────────────────────────────────────────────────
 
 enum UserStatus {
   ACTIVE
@@ -38,6 +38,74 @@ enum AuthEvent {
   MFA_CHALLENGE_FAILED
 }
 
+// ─── Enums — Domínio ──────────────────────────────────────────────────────────
+
+enum ClassStatus {
+  ABERTA
+  EM_ANDAMENTO
+  ENCERRADA
+}
+
+enum EnrollmentStatus {
+  ATIVA
+  TRANCADA
+  CANCELADA
+  CONCLUIDA
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum LiveClassStatus {
+  AGENDADA
+  AO_VIVO
+  ENCERRADA
+}
+
+enum InvoiceStatus {
+  PENDENTE
+  PAGO
+  VENCIDO
+}
+
+enum PaymentMethod {
+  PIX
+  BOLETO
+}
+
+enum DocumentStatus {
+  SOLICITADO
+  EM_ANALISE
+  EMITIDO
+  RECUSADO
+}
+
+enum TicketStatus {
+  ABERTO
+  EM_ATENDIMENTO
+  RESOLVIDO
+  FECHADO
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+}
+
+enum FeatureScopeType {
+  GLOBAL
+  TENANT
+  COURSE
+  ROLE
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+}
+
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
 model Tenant {
@@ -47,7 +115,10 @@ model Tenant {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  users User[]
+  users          User[]
+  courses        Course[]
+  academicPeriods AcademicPeriod[]
+  featureConfigs  FeatureConfig[]
 
   @@map("tenants")
 }
@@ -72,6 +143,22 @@ model User {
   passwordResets     PasswordResetToken[]
   emailVerifications EmailVerificationToken[]
   auditLogs          AuthAuditLog[]
+
+  // Domínio
+  enrollments        Enrollment[]
+  teacherAssignments TeacherAssignment[]
+  submissions        Submission[]
+  attendanceRecords  AttendanceRecord[]
+  gradesReceived     Grade[]               @relation("StudentGrades")
+  gradesGiven        Grade[]               @relation("TeacherGrades")
+  invoices           Invoice[]
+  documents          Document[]
+  tickets            Ticket[]
+  ticketMessages     TicketMessage[]
+  notifications      Notification[]
+  notificationPrefs  NotificationPref[]
+  conversations      Conversation[]
+  auditActions       AuditLog[]
 
   @@index([tenantId])
   @@map("users")
@@ -138,4 +225,463 @@ model AuthAuditLog {
   @@index([userId])
   @@index([eventType])
   @@map("auth_audit_log")
+}
+
+// ─── Acadêmico ────────────────────────────────────────────────────────────────
+
+model Course {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  name        String
+  code        String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  disciplines Discipline[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("courses")
+}
+
+model Discipline {
+  id            String   @id @default(uuid()) @db.Uuid
+  courseId      String   @map("course_id") @db.Uuid
+  name          String
+  code          String
+  workloadHours Int      @map("workload_hours")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  course  Course  @relation(fields: [courseId], references: [id])
+  classes Class[]
+
+  @@unique([courseId, code])
+  @@index([courseId])
+  @@map("disciplines")
+}
+
+model AcademicPeriod {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  name      String
+  startDate DateTime @map("start_date") @db.Date
+  endDate   DateTime @map("end_date") @db.Date
+  isActive  Boolean  @default(false) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  classes Class[]
+
+  @@index([tenantId])
+  @@map("academic_periods")
+}
+
+// Turma
+model Class {
+  id           String      @id @default(uuid()) @db.Uuid
+  disciplineId String      @map("discipline_id") @db.Uuid
+  periodId     String      @map("period_id") @db.Uuid
+  code         String
+  status       ClassStatus @default(ABERTA)
+  maxStudents  Int?        @map("max_students")
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime    @updatedAt @map("updated_at") @db.Timestamptz
+
+  discipline         Discipline          @relation(fields: [disciplineId], references: [id])
+  period             AcademicPeriod      @relation(fields: [periodId], references: [id])
+  enrollments        Enrollment[]
+  teacherAssignments TeacherAssignment[]
+  lessons            Lesson[]
+  assignments        Assignment[]
+  grades             Grade[]
+  attendanceRecords  AttendanceRecord[]
+  liveClasses        LiveClass[]
+  invoices           Invoice[]
+
+  @@unique([disciplineId, periodId, code])
+  @@index([disciplineId])
+  @@index([periodId])
+  @@map("classes")
+}
+
+model Enrollment {
+  id         String           @id @default(uuid()) @db.Uuid
+  studentId  String           @map("student_id") @db.Uuid
+  classId    String           @map("class_id") @db.Uuid
+  status     EnrollmentStatus @default(ATIVA)
+  enrolledAt DateTime         @default(now()) @map("enrolled_at") @db.Timestamptz
+  updatedAt  DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+
+  student User  @relation(fields: [studentId], references: [id])
+  class   Class @relation(fields: [classId], references: [id])
+
+  @@unique([studentId, classId])
+  @@index([studentId])
+  @@index([classId])
+  @@map("enrollments")
+}
+
+model TeacherAssignment {
+  id         String   @id @default(uuid()) @db.Uuid
+  teacherId  String   @map("teacher_id") @db.Uuid
+  classId    String   @map("class_id") @db.Uuid
+  assignedAt DateTime @default(now()) @map("assigned_at") @db.Timestamptz
+
+  teacher User  @relation(fields: [teacherId], references: [id])
+  class   Class @relation(fields: [classId], references: [id])
+
+  @@unique([teacherId, classId])
+  @@index([teacherId])
+  @@index([classId])
+  @@map("teacher_assignments")
+}
+
+// ─── Conteúdo ─────────────────────────────────────────────────────────────────
+
+model Lesson {
+  id          String        @id @default(uuid()) @db.Uuid
+  classId     String        @map("class_id") @db.Uuid
+  title       String
+  description String?
+  order       Int           @default(0)
+  status      ContentStatus @default(DRAFT)
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+
+  class             Class              @relation(fields: [classId], references: [id])
+  materials         Material[]
+  assignments       Assignment[]
+  attendanceRecords AttendanceRecord[]
+
+  @@index([classId])
+  @@map("lessons")
+}
+
+model Material {
+  id        String        @id @default(uuid()) @db.Uuid
+  classId   String        @map("class_id") @db.Uuid
+  lessonId  String?       @map("lesson_id") @db.Uuid
+  title     String
+  url       String
+  type      String
+  status    ContentStatus @default(DRAFT)
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz
+
+  class      Class      @relation(fields: [classId], references: [id])
+  lesson     Lesson?    @relation(fields: [lessonId], references: [id])
+  liveClass  LiveClass? @relation("RecordingMaterial")
+
+  @@index([classId])
+  @@index([lessonId])
+  @@map("materials")
+}
+
+// ─── Atividades ───────────────────────────────────────────────────────────────
+
+model Assignment {
+  id          String   @id @default(uuid()) @db.Uuid
+  classId     String   @map("class_id") @db.Uuid
+  lessonId    String?  @map("lesson_id") @db.Uuid
+  title       String
+  description String?
+  dueDate     DateTime @map("due_date") @db.Timestamptz
+  maxScore    Decimal  @map("max_score") @db.Decimal(5, 2)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  class       Class        @relation(fields: [classId], references: [id])
+  lesson      Lesson?      @relation(fields: [lessonId], references: [id])
+  submissions Submission[]
+
+  @@index([classId])
+  @@index([lessonId])
+  @@map("assignments")
+}
+
+model Submission {
+  id           String    @id @default(uuid()) @db.Uuid
+  assignmentId String    @map("assignment_id") @db.Uuid
+  studentId    String    @map("student_id") @db.Uuid
+  content      String?
+  fileUrl      String?   @map("file_url")
+  submittedAt  DateTime  @default(now()) @map("submitted_at") @db.Timestamptz
+  isLate       Boolean   @default(false) @map("is_late")
+  score        Decimal?  @db.Decimal(5, 2)
+  feedback     String?
+  gradedAt     DateTime? @map("graded_at") @db.Timestamptz
+  gradedById   String?   @map("graded_by_id") @db.Uuid
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id])
+  student    User       @relation(fields: [studentId], references: [id])
+
+  @@unique([assignmentId, studentId])
+  @@index([assignmentId])
+  @@index([studentId])
+  @@map("submissions")
+}
+
+// ─── Notas ────────────────────────────────────────────────────────────────────
+
+model Grade {
+  id          String   @id @default(uuid()) @db.Uuid
+  studentId   String   @map("student_id") @db.Uuid
+  classId     String   @map("class_id") @db.Uuid
+  label       String
+  value       Decimal  @db.Decimal(5, 2)
+  gradedById  String   @map("graded_by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  student   User  @relation("StudentGrades", fields: [studentId], references: [id])
+  class     Class @relation(fields: [classId], references: [id])
+  gradedBy  User  @relation("TeacherGrades", fields: [gradedById], references: [id])
+
+  @@index([studentId, classId])
+  @@map("grades")
+}
+
+// ─── Frequência ───────────────────────────────────────────────────────────────
+
+model AttendanceRecord {
+  id           String   @id @default(uuid()) @db.Uuid
+  classId      String   @map("class_id") @db.Uuid
+  studentId    String   @map("student_id") @db.Uuid
+  lessonId     String?  @map("lesson_id") @db.Uuid
+  present      Boolean
+  date         DateTime @db.Date
+  recordedById String   @map("recorded_by_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  class    Class   @relation(fields: [classId], references: [id])
+  student  User    @relation(fields: [studentId], references: [id])
+  lesson   Lesson? @relation(fields: [lessonId], references: [id])
+
+  @@unique([classId, studentId, lessonId, date])
+  @@index([classId, studentId])
+  @@map("attendance_records")
+}
+
+// ─── Aulas ao Vivo ────────────────────────────────────────────────────────────
+
+model LiveClass {
+  id                  String          @id @default(uuid()) @db.Uuid
+  classId             String          @map("class_id") @db.Uuid
+  title               String
+  scheduledAt         DateTime        @map("scheduled_at") @db.Timestamptz
+  videoLink           String?         @map("video_link")
+  status              LiveClassStatus @default(AGENDADA)
+  recordingMaterialId String?         @unique @map("recording_material_id") @db.Uuid
+  createdAt           DateTime        @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime        @updatedAt @map("updated_at") @db.Timestamptz
+
+  class             Class     @relation(fields: [classId], references: [id])
+  recordingMaterial Material? @relation("RecordingMaterial", fields: [recordingMaterialId], references: [id])
+
+  @@index([classId])
+  @@index([scheduledAt])
+  @@map("live_classes")
+}
+
+// ─── Financeiro ───────────────────────────────────────────────────────────────
+
+model Invoice {
+  id          String        @id @default(uuid()) @db.Uuid
+  studentId   String        @map("student_id") @db.Uuid
+  classId     String?       @map("class_id") @db.Uuid
+  description String
+  amount      Decimal       @db.Decimal(10, 2)
+  dueDate     DateTime      @map("due_date") @db.Date
+  status      InvoiceStatus @default(PENDENTE)
+  gatewayId   String?       @map("gateway_id")
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+
+  student  User      @relation(fields: [studentId], references: [id])
+  class    Class?    @relation(fields: [classId], references: [id])
+  payments Payment[]
+
+  @@index([studentId])
+  @@index([status, dueDate])
+  @@map("invoices")
+}
+
+model Payment {
+  id             String        @id @default(uuid()) @db.Uuid
+  invoiceId      String        @map("invoice_id") @db.Uuid
+  paidAt         DateTime      @map("paid_at") @db.Timestamptz
+  method         PaymentMethod
+  amount         Decimal       @db.Decimal(10, 2)
+  gatewayPayload Json          @map("gateway_payload")
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+
+  @@index([invoiceId])
+  @@map("payments")
+}
+
+// ─── Documentos ───────────────────────────────────────────────────────────────
+
+model Document {
+  id           String         @id @default(uuid()) @db.Uuid
+  studentId    String         @map("student_id") @db.Uuid
+  type         String
+  status       DocumentStatus @default(SOLICITADO)
+  fileUrl      String?        @map("file_url")
+  notes        String?
+  reviewedById String?        @map("reviewed_by_id") @db.Uuid
+  reviewedAt   DateTime?      @map("reviewed_at") @db.Timestamptz
+  requestedAt  DateTime       @default(now()) @map("requested_at") @db.Timestamptz
+  updatedAt    DateTime       @updatedAt @map("updated_at") @db.Timestamptz
+
+  student User @relation(fields: [studentId], references: [id])
+
+  @@index([studentId])
+  @@index([status])
+  @@map("documents")
+}
+
+// ─── Tickets ──────────────────────────────────────────────────────────────────
+
+model Ticket {
+  id        String       @id @default(uuid()) @db.Uuid
+  studentId String       @map("student_id") @db.Uuid
+  subject   String
+  status    TicketStatus @default(ABERTO)
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  closedAt  DateTime?    @map("closed_at") @db.Timestamptz
+
+  student  User            @relation(fields: [studentId], references: [id])
+  messages TicketMessage[]
+
+  @@index([studentId])
+  @@index([status])
+  @@map("tickets")
+}
+
+model TicketMessage {
+  id        String   @id @default(uuid()) @db.Uuid
+  ticketId  String   @map("ticket_id") @db.Uuid
+  authorId  String   @map("author_id") @db.Uuid
+  content   String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author User   @relation(fields: [authorId], references: [id])
+
+  @@index([ticketId])
+  @@map("ticket_messages")
+}
+
+// ─── Notificações ─────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  type      String
+  title     String
+  body      String
+  readAt    DateTime? @map("read_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+model NotificationPref {
+  id        String              @id @default(uuid()) @db.Uuid
+  userId    String              @map("user_id") @db.Uuid
+  channel   NotificationChannel
+  eventType String              @map("event_type")
+  enabled   Boolean             @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channel, eventType])
+  @@map("notification_prefs")
+}
+
+// ─── Settings ─────────────────────────────────────────────────────────────────
+
+model Feature {
+  id          String  @id @default(uuid()) @db.Uuid
+  key         String  @unique
+  name        String
+  isCore      Boolean @default(false) @map("is_core")
+  description String?
+
+  configs FeatureConfig[]
+
+  @@map("features")
+}
+
+model FeatureConfig {
+  id            String           @id @default(uuid()) @db.Uuid
+  featureKey    String           @map("feature_key")
+  tenantId      String?          @map("tenant_id") @db.Uuid
+  scopeType     FeatureScopeType @map("scope_type")
+  scopeId       String?          @map("scope_id")
+  enabled       Boolean          @default(true)
+  configJson    Json?            @map("config_json")
+  order         Int              @default(0)
+  labelOverride String?          @map("label_override")
+
+  feature Feature  @relation(fields: [featureKey], references: [key])
+  tenant  Tenant?  @relation(fields: [tenantId], references: [id])
+
+  @@unique([featureKey, scopeType, scopeId])
+  @@index([featureKey])
+  @@index([tenantId])
+  @@map("feature_configs")
+}
+
+// ─── Auditoria ────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id       String   @id @default(uuid()) @db.Uuid
+  entity   String
+  entityId String   @map("entity_id")
+  userId   String   @map("user_id") @db.Uuid
+  action   String
+  oldValue Json?    @map("old_value")
+  newValue Json?    @map("new_value")
+  at       DateTime @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([entity, entityId])
+  @@index([userId])
+  @@map("audit_logs")
+}
+
+// ─── Assistente ───────────────────────────────────────────────────────────────
+
+model Conversation {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@index([userId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String      @id @default(uuid()) @db.Uuid
+  conversationId String      @map("conversation_id") @db.Uuid
+  role           MessageRole
+  content        String
+  toolCallsJson  Json?       @map("tool_calls_json")
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@map("messages")
 }
