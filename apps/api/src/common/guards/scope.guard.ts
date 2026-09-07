@@ -40,7 +40,8 @@ export class ScopeGuard implements CanActivate {
           where: { teacherId_classId: { teacherId: user.sub, classId } },
           select: { id: true },
         });
-        if (!link) throw new ForbiddenException('Professor não vinculado à turma');
+        if (!link)
+          throw new ForbiddenException('Professor não vinculado à turma');
         return true;
       }
 
@@ -56,6 +57,6 @@ export class ScopeGuard implements CanActivate {
       }
     }
 
-    return true;
+    throw new ForbiddenException('Escopo não verificado para esta role');
   }
 }

@@ -6,7 +6,12 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class LiveClassesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(data: { classId: string; title: string; scheduledAt: Date; videoLink?: string }) {
+  create(data: {
+    classId: string;
+    title: string;
+    scheduledAt: Date;
+    videoLink?: string;
+  }) {
     return this.prisma.liveClass.create({ data });
   }
 
@@ -38,6 +43,15 @@ export class LiveClassesRepository {
 
   update(id: string, data: { videoLink?: string; status?: LiveClassStatus }) {
     return this.prisma.liveClass.update({ where: { id }, data });
+  }
+
+  // IDs dos alunos com matrícula ativa na turma
+  async findActiveStudentIds(classId: string): Promise<string[]> {
+    const rows = await this.prisma.enrollment.findMany({
+      where: { classId, status: 'ATIVA' },
+      select: { studentId: true },
+    });
+    return rows.map((r) => r.studentId);
   }
 
   // Vincula gravação como Material à aula encerrada

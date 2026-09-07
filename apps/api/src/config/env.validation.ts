@@ -49,19 +49,17 @@ const envSchema = z.object({
 
   // JWT
   JWT_ACCESS_SECRET: z.string().min(32),
+  JWT_REFRESH_SECRET: z.string().min(32).optional(),
 
   // Gateway de pagamento (Asaas)
   ASAAS_API_KEY: z.string().optional(),
-  ASAAS_BASE_URL: z
-    .string()
-    .url()
-    .default('https://sandbox.asaas.com/api/v3'),
-  ASAAS_WEBHOOK_TOKEN: z.string().optional(),
+  ASAAS_BASE_URL: z.string().url().default('https://sandbox.asaas.com/api/v3'),
+  // Mínimo 32 chars quando definido — token curto invalida a verificação de assinatura
+  ASAAS_WEBHOOK_TOKEN: z.string().min(32).optional(),
 
-  // LLM (assistente)
-  LLM_PROVIDER: z.enum(['openai', 'anthropic']).default('openai'),
-  LLM_API_KEY: z.string().optional(),
-  LLM_MODEL: z.string().default('gpt-4o-mini'),
+  // LLM — assistente/chatbot (provider Anthropic)
+  ANTHROPIC_API_KEY: z.string().optional(),
+  ANTHROPIC_MODEL: z.string().default('claude-haiku-4-5-20251001'),
 });
 
 export type Env = z.infer<typeof envSchema>;

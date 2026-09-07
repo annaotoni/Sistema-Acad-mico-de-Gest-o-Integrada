@@ -13,7 +13,9 @@ export class DocumentsRepository {
   findById(id: string) {
     return this.prisma.document.findUnique({
       where: { id },
-      include: { student: { select: { id: true, email: true } } },
+      include: {
+        student: { select: { id: true, email: true, tenantId: true } },
+      },
     });
   }
 

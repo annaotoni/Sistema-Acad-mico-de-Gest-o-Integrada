@@ -15,7 +15,10 @@ import type { RequestDocumentDto } from './dto/request-document.dto';
 import type { ReviewDocumentDto } from './dto/review-document.dto';
 
 // Máquina de estados: SOLICITADO → EM_ANALISE → EMITIDO | RECUSADO
-const TERMINAL = new Set<DocumentStatus>([DocumentStatus.EMITIDO, DocumentStatus.RECUSADO]);
+const TERMINAL = new Set<DocumentStatus>([
+  DocumentStatus.EMITIDO,
+  DocumentStatus.RECUSADO,
+]);
 
 @Injectable()
 export class DocumentsService {
@@ -27,7 +30,11 @@ export class DocumentsService {
   ) {}
 
   create(dto: RequestDocumentDto, user: AccessTokenPayload) {
-    return this.repo.create({ studentId: user.sub, type: dto.type, notes: dto.notes });
+    return this.repo.create({
+      studentId: user.sub,
+      type: dto.type,
+      notes: dto.notes,
+    });
   }
 
   async listDocuments(user: AccessTokenPayload) {
@@ -39,14 +46,21 @@ export class DocumentsService {
   async getDocument(id: string, user: AccessTokenPayload) {
     const doc = await this.repo.findById(id);
     if (!doc) throw new NotFoundException('Documento não encontrado');
-    if (user.role === Role.ALUNO && doc.studentId !== user.sub) throw new ForbiddenException();
+    if (user.role === Role.ALUNO && doc.studentId !== user.sub)
+      throw new ForbiddenException();
     return doc;
   }
 
   async review(id: string, dto: ReviewDocumentDto, actor: AccessTokenPayload) {
     const doc = await this.repo.findById(id);
     if (!doc) throw new NotFoundException('Documento não encontrado');
-    if (TERMINAL.has(doc.status)) throw new BadRequestException('Documento já finalizado');
+    if (TERMINAL.has(doc.status))
+      throw new BadRequestException('Documento já finalizado');
+
+    // Secretaria só pode revisar documentos do próprio tenant
+    if (actor.tenantId && doc.student?.tenantId !== actor.tenantId) {
+      throw new ForbiddenException('Documento pertence a outro tenant');
+    }
 
     // Primeiro passo: mover para EM_ANALISE se ainda SOLICITADO
     if (doc.status === DocumentStatus.SOLICITADO) {

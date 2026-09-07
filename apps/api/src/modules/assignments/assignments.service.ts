@@ -35,12 +35,17 @@ export class AssignmentsService {
     return a;
   }
 
-  async submit(assignmentId: string, user: AccessTokenPayload, dto: CreateSubmissionDto) {
+  async submit(
+    assignmentId: string,
+    user: AccessTokenPayload,
+    dto: CreateSubmissionDto,
+  ) {
     const assignment = await this.repo.findAssignmentById(assignmentId);
     if (!assignment) throw new NotFoundException('Atividade não encontrada');
 
     const existing = await this.repo.findSubmission(assignmentId, user.sub);
-    if (existing) throw new ConflictException('Entrega já realizada para esta atividade');
+    if (existing)
+      throw new ConflictException('Entrega já realizada para esta atividade');
 
     // Entrega aceita após prazo, mas marcada como atrasada
     const isLate = new Date() > assignment.dueDate;
@@ -59,17 +64,27 @@ export class AssignmentsService {
     return this.repo.findSubmissionsByAssignment(assignmentId);
   }
 
-  async gradeSubmission(submissionId: string, dto: GradeSubmissionDto, user: AccessTokenPayload) {
+  async gradeSubmission(
+    submissionId: string,
+    dto: GradeSubmissionDto,
+    user: AccessTokenPayload,
+  ) {
     const submission = await this.repo.findSubmissionById(submissionId);
     if (!submission) throw new NotFoundException('Entrega não encontrada');
 
-    const assignment = await this.repo.findAssignmentById(submission.assignmentId);
-    if (dto.score > Number(assignment!.maxScore)) {
+    const assignment = await this.repo.findAssignmentById(
+      submission.assignmentId,
+    );
+    if (!assignment) throw new NotFoundException('Atividade não encontrada');
+    if (dto.score > Number(assignment.maxScore)) {
       throw new BadRequestException(
-        `Nota ${dto.score} excede o máximo permitido (${assignment!.maxScore})`,
+        `Nota ${dto.score} excede o máximo permitido (${Number(assignment.maxScore)})`,
       );
     }
 
-    return this.repo.gradeSubmission(submissionId, { ...dto, gradedById: user.sub });
+    return this.repo.gradeSubmission(submissionId, {
+      ...dto,
+      gradedById: user.sub,
+    });
   }
 }

@@ -1,4 +1,8 @@
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InvoiceStatus, PaymentMethod, Role } from '@prisma/client';
 import { FinanceService } from './finance.service';
 
@@ -13,6 +17,8 @@ const mockRepo = {
   findOverdueInvoices: jest.fn(),
   findInvoiceByGatewayId: jest.fn(),
   markInvoicesOverdue: jest.fn(),
+  confirmPaymentAtomic: jest.fn(),
+  recordManualPaymentAtomic: jest.fn(),
 };
 
 const mockGateway = {
@@ -24,10 +30,29 @@ const mockAudit = { log: jest.fn() };
 const mockNotifications = { publish: jest.fn() };
 
 const makeService = () =>
-  new FinanceService(mockRepo as any, mockGateway as any, mockAudit as any, mockNotifications as any);
+  new FinanceService(
+    mockRepo as any,
+    mockGateway,
+    mockAudit as any,
+    mockNotifications as any,
+  );
 
-const adminUser = { sub: 'admin-1', role: Role.ADMIN, tenantId: 'tenant-1', jti: '', iat: 0, exp: 0 };
-const alunoUser = { sub: 'aluno-1', role: Role.ALUNO, tenantId: 'tenant-1', jti: '', iat: 0, exp: 0 };
+const adminUser = {
+  sub: 'admin-1',
+  role: Role.ADMIN,
+  tenantId: 'tenant-1',
+  jti: '',
+  iat: 0,
+  exp: 0,
+};
+const alunoUser = {
+  sub: 'aluno-1',
+  role: Role.ALUNO,
+  tenantId: 'tenant-1',
+  jti: '',
+  iat: 0,
+  exp: 0,
+};
 
 const pendingInvoice = {
   id: 'inv-1',
@@ -52,56 +77,91 @@ describe('listInvoices', () => {
 
   it('admin sem tenantId lança ForbiddenException', async () => {
     const svc = makeService();
-    await expect(svc.listInvoices({ ...adminUser, tenantId: null })).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(
+      svc.listInvoices({ ...adminUser, tenantId: null }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 });
 
 describe('getInvoice', () => {
   it('aluno não vê fatura de outro aluno', async () => {
-    mockRepo.findInvoiceById.mockResolvedValue({ ...pendingInvoice, studentId: 'outro-aluno' });
-    await expect(makeService().getInvoice('inv-1', alunoUser)).rejects.toBeInstanceOf(ForbiddenException);
+    mockRepo.findInvoiceById.mockResolvedValue({
+      ...pendingInvoice,
+      studentId: 'outro-aluno',
+    });
+    await expect(
+      makeService().getInvoice('inv-1', alunoUser),
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it('lança NotFoundException se não existir', async () => {
     mockRepo.findInvoiceById.mockResolvedValue(null);
-    await expect(makeService().getInvoice('inv-x', adminUser)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      makeService().getInvoice('inv-x', adminUser),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });
 
 describe('generatePix', () => {
   it('rejeita fatura já paga', async () => {
-    mockRepo.findInvoiceById.mockResolvedValue({ ...pendingInvoice, status: InvoiceStatus.PAGO });
-    await expect(makeService().generatePix('inv-1', adminUser)).rejects.toBeInstanceOf(BadRequestException);
+    mockRepo.findInvoiceById.mockResolvedValue({
+      ...pendingInvoice,
+      status: InvoiceStatus.PAGO,
+    });
+    await expect(
+      makeService().generatePix('inv-1', adminUser),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('chama gateway e retorna resultado', async () => {
     mockRepo.findInvoiceById.mockResolvedValue(pendingInvoice);
-    mockGateway.createPixCharge.mockResolvedValue({ gatewayId: 'gw-1', qrCode: 'qr', copyPaste: 'cp', expiresAt: new Date() });
+    mockGateway.createPixCharge.mockResolvedValue({
+      gatewayId: 'gw-1',
+      qrCode: 'qr',
+      copyPaste: 'cp',
+      expiresAt: new Date(),
+    });
     mockRepo.updateInvoiceGatewayId.mockResolvedValue({});
     mockNotifications.publish.mockResolvedValue(undefined);
 
     const result = await makeService().generatePix('inv-1', adminUser);
     expect(result.gatewayId).toBe('gw-1');
-    expect(mockRepo.updateInvoiceGatewayId).toHaveBeenCalledWith('inv-1', 'gw-1');
+    expect(mockRepo.updateInvoiceGatewayId).toHaveBeenCalledWith(
+      'inv-1',
+      'gw-1',
+    );
   });
 });
 
 describe('recordManualPayment', () => {
   it('rejeita fatura já paga', async () => {
-    mockRepo.findInvoiceById.mockResolvedValue({ ...pendingInvoice, status: InvoiceStatus.PAGO });
-    await expect(makeService().recordManualPayment('inv-1', { method: 'PIX', amount: 500 }, adminUser))
-      .rejects.toBeInstanceOf(BadRequestException);
+    mockRepo.findInvoiceById.mockResolvedValue({
+      ...pendingInvoice,
+      status: InvoiceStatus.PAGO,
+    });
+    await expect(
+      makeService().recordManualPayment(
+        'inv-1',
+        { method: 'PIX', amount: 500 },
+        adminUser,
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('cria pagamento e gera AuditLog', async () => {
     mockRepo.findInvoiceById.mockResolvedValue(pendingInvoice);
-    mockRepo.createPayment.mockResolvedValue({ id: 'pay-1' });
-    mockRepo.updateInvoiceStatus.mockResolvedValue({});
+    mockRepo.recordManualPaymentAtomic.mockResolvedValue({ id: 'pay-1' });
     mockAudit.log.mockResolvedValue({});
     mockNotifications.publish.mockResolvedValue(undefined);
 
-    await makeService().recordManualPayment('inv-1', { method: 'PIX', amount: 500 }, adminUser);
-    expect(mockAudit.log).toHaveBeenCalledWith(expect.objectContaining({ action: 'MANUAL_PAYMENT' }));
+    await makeService().recordManualPayment(
+      'inv-1',
+      { method: 'PIX', amount: 500 },
+      adminUser,
+    );
+    expect(mockAudit.log).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'MANUAL_PAYMENT' }),
+    );
   });
 });
 
@@ -127,19 +187,34 @@ describe('markOverdueInvoices', () => {
 
 describe('confirmPaymentFromWebhook', () => {
   it('ignora se invoice já está PAGO', async () => {
-    mockRepo.findInvoiceByGatewayId.mockResolvedValue({ ...pendingInvoice, status: InvoiceStatus.PAGO });
-    await makeService().confirmPaymentFromWebhook({ gatewayId: 'gw-1', method: PaymentMethod.PIX, amount: 500, paidAt: new Date(), rawPayload: {} });
+    mockRepo.findInvoiceByGatewayId.mockResolvedValue({
+      ...pendingInvoice,
+      status: InvoiceStatus.PAGO,
+    });
+    await makeService().confirmPaymentFromWebhook({
+      gatewayId: 'gw-1',
+      method: PaymentMethod.PIX,
+      amount: 500,
+      paidAt: new Date(),
+      rawPayload: {},
+    });
     expect(mockRepo.createPayment).not.toHaveBeenCalled();
   });
 
   it('cria Payment e marca PAGO', async () => {
     mockRepo.findInvoiceByGatewayId.mockResolvedValue(pendingInvoice);
-    mockRepo.createPayment.mockResolvedValue({});
-    mockRepo.updateInvoiceStatus.mockResolvedValue({});
+    mockRepo.confirmPaymentAtomic.mockResolvedValue(true);
     mockNotifications.publish.mockResolvedValue(undefined);
 
-    await makeService().confirmPaymentFromWebhook({ gatewayId: 'gw-1', method: PaymentMethod.PIX, amount: 500, paidAt: new Date(), rawPayload: {} });
-    expect(mockRepo.createPayment).toHaveBeenCalled();
-    expect(mockRepo.updateInvoiceStatus).toHaveBeenCalledWith('inv-1', InvoiceStatus.PAGO);
+    await makeService().confirmPaymentFromWebhook({
+      gatewayId: 'gw-1',
+      method: PaymentMethod.PIX,
+      amount: 500,
+      paidAt: new Date(),
+      rawPayload: {},
+    });
+    expect(mockRepo.confirmPaymentAtomic).toHaveBeenCalledWith(
+      expect.objectContaining({ invoiceId: 'inv-1' }),
+    );
   });
 });

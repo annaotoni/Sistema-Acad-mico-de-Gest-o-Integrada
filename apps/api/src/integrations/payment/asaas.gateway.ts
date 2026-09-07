@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type {
   BoletoResult,
@@ -9,6 +13,7 @@ import type {
 
 @Injectable()
 export class AsaasGateway implements IPaymentGateway {
+  private readonly logger = new Logger(AsaasGateway.name);
   private readonly baseUrl: string;
   private readonly apiKey: string;
 
@@ -17,7 +22,11 @@ export class AsaasGateway implements IPaymentGateway {
     this.apiKey = config.getOrThrow<string>('ASAAS_API_KEY');
   }
 
-  private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  private async request<T>(
+    method: string,
+    path: string,
+    body?: unknown,
+  ): Promise<T> {
     const res = await fetch(`${this.baseUrl}${path}`, {
       method,
       headers: {
@@ -28,9 +37,12 @@ export class AsaasGateway implements IPaymentGateway {
     });
 
     if (!res.ok) {
-      throw new InternalServerErrorException(
-        `Asaas API error ${res.status}: ${await res.text()}`,
+      const errorBody = await res.text();
+      this.logger.error(
+        `Asaas API error ${res.status} em ${method} ${path}`,
+        errorBody,
       );
+      throw new InternalServerErrorException('Falha ao processar pagamento');
     }
 
     return res.json() as Promise<T>;

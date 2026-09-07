@@ -35,7 +35,7 @@ export class LiveClassesService {
     });
   }
 
-  async listByClass(classId: string, user: AccessTokenPayload) {
+  async listByClass(classId: string, _user: AccessTokenPayload) {
     return this.repo.findByClass(classId);
   }
 
@@ -44,7 +44,11 @@ export class LiveClassesService {
     return this.repo.findUpcomingForStudent(user.sub);
   }
 
-  async update(id: string, dto: UpdateLiveClassDto, actor: AccessTokenPayload) {
+  async update(
+    id: string,
+    dto: UpdateLiveClassDto,
+    _actor: AccessTokenPayload,
+  ) {
     const liveClass = await this.repo.findById(id);
     if (!liveClass) throw new NotFoundException('Aula ao vivo não encontrada');
 
@@ -54,11 +58,6 @@ export class LiveClassesService {
         throw new BadRequestException(
           `Transição inválida: ${liveClass.status} → ${dto.status}`,
         );
-      }
-
-      // Ao vivo: notifica alunos matriculados
-      if (dto.status === LiveClassStatus.AO_VIVO) {
-        await this.notifyClassStudents(liveClass.classId, liveClass.title);
       }
 
       // Encerrada com gravação: vincula como Material publicado
@@ -72,19 +71,32 @@ export class LiveClassesService {
       }
     }
 
-    return this.repo.update(id, {
+    const updated = await this.repo.update(id, {
       ...(dto.videoLink ? { videoLink: dto.videoLink } : {}),
       ...(dto.status ? { status: dto.status } : {}),
     });
+
+    // Notificações são disparadas após persistir o estado — falha aqui não reverte a transição
+    if (dto.status === LiveClassStatus.AO_VIVO) {
+      this.notifyClassStudents(liveClass.classId, liveClass.title).catch(
+        () => undefined,
+      );
+    }
+
+    return updated;
   }
 
   private async notifyClassStudents(classId: string, title: string) {
-    // ponytail: consulta direta — trocar por query via AcademicRepository se o módulo for exportado
-    await this.notifications.publish({
-      type: NOTIFICATION_EVENTS.AULA_COMECANDO,
-      userId: classId, // placeholder: o processor de notificações precisará fan-out por turma
-      title: 'Aula ao vivo começando',
-      body: `A aula "${title}" está começando agora.`,
-    });
+    const studentIds = await this.repo.findActiveStudentIds(classId);
+    await Promise.all(
+      studentIds.map((userId) =>
+        this.notifications.publish({
+          type: NOTIFICATION_EVENTS.AULA_COMECANDO,
+          userId,
+          title: 'Aula ao vivo começando',
+          body: `A aula "${title}" está começando agora.`,
+        }),
+      ),
+    );
   }
 }

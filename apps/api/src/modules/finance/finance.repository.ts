@@ -76,6 +76,52 @@ export class FinanceRepository {
     return this.prisma.invoice.findFirst({ where: { gatewayId } });
   }
 
+  // Cria pagamento + marca fatura como PAGO em transação atômica — elimina race em retry do gateway
+  async confirmPaymentAtomic(data: {
+    invoiceId: string;
+    paidAt: Date;
+    method: PaymentMethod;
+    amount: number;
+    gatewayPayload: Prisma.InputJsonValue;
+  }): Promise<boolean> {
+    return this.prisma.$transaction(async (tx) => {
+      const invoice = await tx.invoice.findUnique({
+        where: { id: data.invoiceId },
+        select: { status: true },
+      });
+      if (invoice?.status === InvoiceStatus.PAGO) return false;
+
+      const { invoiceId, ...paymentData } = data;
+      await tx.payment.create({ data: { invoiceId, ...paymentData } });
+      await tx.invoice.update({
+        where: { id: invoiceId },
+        data: { status: InvoiceStatus.PAGO },
+      });
+      return true;
+    });
+  }
+
+  // Baixa manual: pagamento + status em transação — garante consistência do ledger
+  async recordManualPaymentAtomic(data: {
+    invoiceId: string;
+    paidAt: Date;
+    method: PaymentMethod;
+    amount: Prisma.Decimal | number;
+    gatewayPayload: Prisma.InputJsonValue;
+  }) {
+    return this.prisma.$transaction(async (tx) => {
+      const { invoiceId, ...paymentData } = data;
+      const payment = await tx.payment.create({
+        data: { invoiceId, ...paymentData },
+      });
+      await tx.invoice.update({
+        where: { id: invoiceId },
+        data: { status: InvoiceStatus.PAGO },
+      });
+      return payment;
+    });
+  }
+
   markInvoicesOverdue(ids: string[]) {
     return this.prisma.invoice.updateMany({
       where: { id: { in: ids }, status: InvoiceStatus.PENDENTE },

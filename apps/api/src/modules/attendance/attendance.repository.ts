@@ -5,9 +5,30 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class AttendanceRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findRecord(classId: string, studentId: string, lessonId: string | undefined, date: Date) {
+  findRecord(
+    classId: string,
+    studentId: string,
+    lessonId: string | undefined,
+    date: Date,
+  ) {
     return this.prisma.attendanceRecord.findFirst({
       where: { classId, studentId, lessonId: lessonId ?? null, date },
+    });
+  }
+
+  findRecords(
+    classId: string,
+    studentIds: string[],
+    lessonId: string | undefined,
+    date: Date,
+  ) {
+    return this.prisma.attendanceRecord.findMany({
+      where: {
+        classId,
+        studentId: { in: studentIds },
+        lessonId: lessonId ?? null,
+        date,
+      },
     });
   }
 

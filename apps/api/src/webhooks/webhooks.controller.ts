@@ -1,18 +1,35 @@
+import { timingSafeEqual } from 'crypto';
 import {
+  BadRequestException,
   Body,
   Controller,
   Headers,
   HttpCode,
   HttpStatus,
+  Logger,
   Post,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PaymentMethod } from '@prisma/client';
+import { z } from 'zod';
 import { FinanceService } from '../modules/finance/finance.service';
+
+const PaymentWebhookSchema = z.object({
+  event: z.string(),
+  payment: z
+    .object({
+      id: z.string(),
+      value: z.number(),
+      billingType: z.string(),
+      confirmedDate: z.string().optional(),
+    })
+    .optional(),
+});
 
 @Controller('webhooks')
 export class WebhooksController {
+  private readonly logger = new Logger(WebhooksController.name);
   private readonly asaasToken: string;
 
   constructor(
@@ -29,24 +46,40 @@ export class WebhooksController {
     @Body() body: Record<string, unknown>,
   ) {
     // Webhook sem autenticação de sessão — valida apenas assinatura do gateway
-    if (token !== this.asaasToken) throw new UnauthorizedException();
+    const tokenBuf = Buffer.from(token ?? '');
+    const expectedBuf = Buffer.from(this.asaasToken);
+    if (
+      !token ||
+      tokenBuf.length !== expectedBuf.length ||
+      !timingSafeEqual(tokenBuf, expectedBuf)
+    ) {
+      this.logger.warn('Webhook rejeitado: token inválido ou ausente');
+      throw new UnauthorizedException();
+    }
 
-    const event = body['event'] as string | undefined;
+    const parsed = PaymentWebhookSchema.safeParse(body);
+    if (!parsed.success) {
+      throw new BadRequestException('Payload de webhook inválido');
+    }
+
+    const { event, payment } = parsed.data;
+
     if (event !== 'PAYMENT_RECEIVED' && event !== 'PAYMENT_CONFIRMED') {
       return { ignored: true };
     }
 
-    const payment = body['payment'] as Record<string, unknown> | undefined;
     if (!payment) return { ignored: true };
 
-    const billingType = String(payment['billingType'] ?? '');
-    const method: PaymentMethod = billingType === 'BOLETO' ? PaymentMethod.BOLETO : PaymentMethod.PIX;
+    const method: PaymentMethod =
+      payment.billingType === 'BOLETO'
+        ? PaymentMethod.BOLETO
+        : PaymentMethod.PIX;
 
     await this.finance.confirmPaymentFromWebhook({
-      gatewayId: String(payment['id'] ?? ''),
+      gatewayId: payment.id,
       method,
-      amount: Number(payment['value'] ?? 0),
-      paidAt: new Date(String(payment['confirmedDate'] ?? new Date())),
+      amount: payment.value,
+      paidAt: new Date(payment.confirmedDate ?? new Date()),
       rawPayload: body,
     });
 

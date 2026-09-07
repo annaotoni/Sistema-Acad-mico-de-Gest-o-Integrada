@@ -25,7 +25,7 @@ export class FinanceService {
     private readonly notifications: NotificationsService,
   ) {}
 
-  async createInvoice(dto: CreateInvoiceDto, actor: AccessTokenPayload) {
+  async createInvoice(dto: CreateInvoiceDto, _actor: AccessTokenPayload) {
     return this.repo.createInvoice({
       studentId: dto.studentId,
       classId: dto.classId,
@@ -115,16 +115,13 @@ export class FinanceService {
       throw new BadRequestException('Fatura já paga');
     }
 
-    const [payment] = await Promise.all([
-      this.repo.createPayment({
-        invoiceId,
-        paidAt: dto.paidAt ? new Date(dto.paidAt) : new Date(),
-        method: dto.method as PaymentMethod,
-        amount: dto.amount,
-        gatewayPayload: { manual: true, notes: dto.notes ?? null },
-      }),
-      this.repo.updateInvoiceStatus(invoiceId, InvoiceStatus.PAGO),
-    ]);
+    const payment = await this.repo.recordManualPaymentAtomic({
+      invoiceId,
+      paidAt: dto.paidAt ? new Date(dto.paidAt) : new Date(),
+      method: dto.method,
+      amount: dto.amount,
+      gatewayPayload: { manual: true, notes: dto.notes ?? null },
+    });
 
     await this.audit.log({
       entity: 'Invoice',
@@ -156,7 +153,7 @@ export class FinanceService {
     const invoice = await this.repo.findInvoiceByGatewayId(data.gatewayId);
     if (!invoice || invoice.status === InvoiceStatus.PAGO) return;
 
-    await this.repo.createPayment({
+    const confirmed = await this.repo.confirmPaymentAtomic({
       invoiceId: invoice.id,
       paidAt: data.paidAt,
       method: data.method,
@@ -164,7 +161,7 @@ export class FinanceService {
       gatewayPayload: data.rawPayload as Prisma.InputJsonValue,
     });
 
-    await this.repo.updateInvoiceStatus(invoice.id, InvoiceStatus.PAGO);
+    if (!confirmed) return;
 
     await this.notifications.publish({
       type: NOTIFICATION_EVENTS.PAGAMENTO_CONFIRMADO,

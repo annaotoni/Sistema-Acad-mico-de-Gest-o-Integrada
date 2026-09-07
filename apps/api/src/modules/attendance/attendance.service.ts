@@ -11,11 +11,26 @@ export class AttendanceService {
     private readonly audit: AuditService,
   ) {}
 
-  async recordBulk(classId: string, dto: RecordAttendanceDto, user: AccessTokenPayload) {
+  async recordBulk(
+    classId: string,
+    dto: RecordAttendanceDto,
+    user: AccessTokenPayload,
+  ) {
     const date = new Date(dto.date);
+    const studentIds = dto.records.map((r) => r.studentId);
+
+    // Busca todos os registros existentes de uma só query antes de upsertá-los
+    const existingRows = await this.repo.findRecords(
+      classId,
+      studentIds,
+      dto.lessonId,
+      date,
+    );
+    const existingMap = new Map(existingRows.map((r) => [r.studentId, r]));
+
     return Promise.all(
       dto.records.map(async (entry) => {
-        const existing = await this.repo.findRecord(classId, entry.studentId, dto.lessonId, date);
+        const existing = existingMap.get(entry.studentId);
         const record = await this.repo.upsertRecord({
           classId,
           studentId: entry.studentId,
@@ -45,9 +60,14 @@ export class AttendanceService {
     return this.repo.findByClass(classId);
   }
 
-  async updateAttendance(recordId: string, present: boolean, user: AccessTokenPayload) {
+  async updateAttendance(
+    recordId: string,
+    present: boolean,
+    user: AccessTokenPayload,
+  ) {
     const record = await this.repo.findById(recordId);
-    if (!record) throw new NotFoundException('Registro de presença não encontrado');
+    if (!record)
+      throw new NotFoundException('Registro de presença não encontrado');
 
     if (record.present !== present) {
       await this.audit.log({
