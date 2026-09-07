@@ -1,0 +1,13 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": ".e2e-spec.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "moduleNameMapper": {
+    "^otplib$": "<rootDir>/../src/__mocks__/otplib.ts",
+    "^qrcode$": "<rootDir>/../src/__mocks__/qrcode.ts"
+  }
+}
