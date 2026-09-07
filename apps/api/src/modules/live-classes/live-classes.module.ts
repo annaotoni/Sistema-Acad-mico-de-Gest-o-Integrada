@@ -8,5 +8,6 @@ import { LiveClassesController } from './live-classes.controller';
   imports: [NotificationsModule],
   controllers: [LiveClassesController],
   providers: [LiveClassesRepository, LiveClassesService],
+  exports: [LiveClassesService],
 })
 export class LiveClassesModule {}

@@ -8,5 +8,6 @@ import { GradesService } from './grades.service';
 @Module({
   controllers: [GradesController],
   providers: [GradesService, GradesRepository, RoleGuard, ScopeGuard],
+  exports: [GradesService],
 })
 export class GradesModule {}

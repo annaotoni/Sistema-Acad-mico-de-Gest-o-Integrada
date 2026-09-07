@@ -16,6 +16,7 @@ import { AssignmentsModule } from './modules/assignments/assignments.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ContentModule } from './modules/content/content.module';
+import { AssistantModule } from './modules/assistant/assistant.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { FinanceModule } from './modules/finance/finance.module';
 import { GradesModule } from './modules/grades/grades.module';
@@ -57,6 +58,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     DocumentsModule,
     LiveClassesModule,
     TicketsModule,
+    AssistantModule,
     WebhooksModule,
     JobsModule,
   ],

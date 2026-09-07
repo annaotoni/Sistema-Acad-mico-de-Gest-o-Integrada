@@ -9,5 +9,6 @@ import { DocumentsController } from './documents.controller';
   imports: [NotificationsModule],
   controllers: [DocumentsController],
   providers: [DocumentsRepository, DocumentsService, PdfService],
+  exports: [DocumentsService],
 })
 export class DocumentsModule {}

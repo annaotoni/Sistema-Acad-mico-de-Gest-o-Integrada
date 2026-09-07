@@ -8,5 +8,6 @@ import { AssignmentsService } from './assignments.service';
 @Module({
   controllers: [AssignmentsController],
   providers: [AssignmentsService, AssignmentsRepository, RoleGuard, ScopeGuard],
+  exports: [AssignmentsService],
 })
 export class AssignmentsModule {}
