@@ -16,10 +16,13 @@ import { AssignmentsModule } from './modules/assignments/assignments.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ContentModule } from './modules/content/content.module';
+import { DocumentsModule } from './modules/documents/documents.module';
 import { FinanceModule } from './modules/finance/finance.module';
 import { GradesModule } from './modules/grades/grades.module';
+import { LiveClassesModule } from './modules/live-classes/live-classes.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { TicketsModule } from './modules/tickets/tickets.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 
@@ -51,6 +54,9 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     AttendanceModule,
     NotificationsModule,
     FinanceModule,
+    DocumentsModule,
+    LiveClassesModule,
+    TicketsModule,
     WebhooksModule,
     JobsModule,
   ],
