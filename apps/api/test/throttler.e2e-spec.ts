@@ -13,6 +13,8 @@ import { MailService } from '../src/modules/mail/mail.service';
 import { UsersModule } from '../src/modules/users/users.module';
 import { PrismaModule } from '../src/prisma/prisma.module';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { AuditModule } from '../src/common/audit/audit.module';
+import { AuditService } from '../src/common/audit/audit.service';
 
 const TEST_ENV = {
   JWT_ACCESS_SECRET: 'e2e-test-secret-com-pelo-menos-32-caracteres',
@@ -37,9 +39,12 @@ describe('Throttler (e2e)', () => {
         AuthModule,
         UsersModule,
         PrismaModule,
+        AuditModule,
       ],
       providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
     })
+      .overrideProvider(AuditService)
+      .useValue({ log: jest.fn().mockResolvedValue(undefined) })
       .overrideProvider(PrismaService)
       .useValue({
         user: { findUnique: jest.fn().mockResolvedValue(null) },

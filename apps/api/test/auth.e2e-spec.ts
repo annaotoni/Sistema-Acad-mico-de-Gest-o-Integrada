@@ -15,6 +15,8 @@ import { MailService } from '../src/modules/mail/mail.service';
 import { UsersModule } from '../src/modules/users/users.module';
 import { PrismaModule } from '../src/prisma/prisma.module';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { AuditModule } from '../src/common/audit/audit.module';
+import { AuditService } from '../src/common/audit/audit.service';
 
 const TEST_ENV = {
   JWT_ACCESS_SECRET: 'e2e-test-secret-com-pelo-menos-32-caracteres',
@@ -69,6 +71,7 @@ describe('Auth + Users (e2e)', () => {
     prisma = {
       user: {
         findUnique: jest.fn().mockResolvedValue(null),
+        findUniqueOrThrow: jest.fn().mockResolvedValue({ role: 'ALUNO', tenantId: 'tenant-1' }),
         create: jest.fn().mockResolvedValue({ id: 'user-1' }),
         update: jest.fn(),
       },
@@ -107,8 +110,11 @@ describe('Auth + Users (e2e)', () => {
         AuthModule,
         UsersModule,
         PrismaModule,
+        AuditModule,
       ],
     })
+      .overrideProvider(AuditService)
+      .useValue({ log: jest.fn().mockResolvedValue(undefined) })
       .overrideProvider(HibpService)
       .useValue(hibpService)
       .overrideProvider(PrismaService)
