@@ -1,186 +1,184 @@
-# auth-system
+# Sistema Acadêmico de Gestão Integrada
 
-Sistema de autenticação completo — cadastro, verificação de e-mail, login,
-refresh token com rotação e detecção de reuso, recuperação de senha —
-construído com foco em segurança de nível produção. Projeto de portfólio.
+Backend de um portal acadêmico multi-perfil construído com **NestJS 11 + TypeScript**, seguindo arquitetura hexagonal em camadas com três guardas de segurança de domínio.
 
-Para as decisões de arquitetura e segurança por trás do código, veja o
-[ARCHITECTURE.md](./ARCHITECTURE.md).
+Projeto de portfólio com foco em clareza arquitetural, segurança de domínio e separação de responsabilidades.
+
+---
 
 ## Stack
 
-| Camada          | Tecnologia                                                      |
-| --------------- | --------------------------------------------------------------- |
-| Back-end        | NestJS + TypeScript estrito                                     |
-| ORM             | Prisma + PostgreSQL (`citext` para e-mail case-insensitive)     |
-| Front-end       | React + TypeScript + Vite                                       |
-| UI              | TailwindCSS v4 + shadcn/ui                                      |
-| Formulários     | React Hook Form + Zod                                           |
-| Estado servidor | TanStack Query                                                  |
-| Hash de senha   | Argon2id (parâmetros OWASP)                                     |
-| E-mail          | Nodemailer — Mailhog no dev, Resend em produção                 |
-| Testes          | Jest + Supertest (unitário, e2e mockado, e2e com Postgres real) |
+| Camada | Tecnologia |
+|---|---|
+| Framework | NestJS 11 + TypeScript 5 |
+| ORM | Prisma 6 + PostgreSQL |
+| Fila / Jobs | BullMQ + Redis |
+| Validação | Zod |
+| Autenticação | JWT (Passport) + Argon2 + MFA (TOTP) |
+| Gateway de pagamento | Asaas (Pix + Boleto) |
+| LLM | Anthropic Claude (interface trocável) |
+| PDF | pdfkit |
+| Testes | Jest + ts-jest |
 
-## Funcionalidades de segurança
+---
 
-- Senha com Argon2id; comparação sempre feita mesmo sem usuário existente (anti-timing).
-- Access token JWT de vida curta (15 min) + refresh token opaco, hasheado no banco, em cookie `httpOnly`+`Secure`+`SameSite=Strict`.
-- Rotação de refresh token a cada uso, com detecção de reuso: token roubado reapresentado revoga a sessão inteira.
-- Revogação imediata de access token no logout via blocklist Redis por `jti` (JWT ID) — token interceptado não funciona após logout.
-- MFA com TOTP (Google Authenticator, Authy etc.) — setup, ativação e desativação por endpoint autenticado.
-- Sem enumeração de usuário: resposta e tempo de resposta genéricos em cadastro, login e recuperação de senha.
-- Rate limit por IP + lockout progressivo por conta (1 min → 5 min → 30 min → 1h → 24h).
-- Rate limit individual em todos os endpoints sensíveis: login (5/min), register (5/min), forgot-password (3/min), refresh (10/min), reset-password (5/min), verify (10/min), MFA (5/min). Contadores persistem entre restarts via Redis.
-- Verificação de e-mail obrigatória antes do login, com reenvio de link.
-- Checagem opcional de senha vazada via HIBP (k-anonymity, sem enviar a senha).
-- Log de auditoria (login, logout, reset, verificação, reuso de token, MFA) com IP e user-agent.
-- Cabeçalhos de segurança (helmet), CORS configurável por allowlist de domínios via `CORS_ORIGINS`, validação de entrada em todo endpoint.
+## Arquitetura em Camadas
 
-Detalhamento completo em [ARCHITECTURE.md](./ARCHITECTURE.md).
+Todo request percorre o seguinte fluxo, sem atalhos:
 
-## Rodando localmente
-
-Pré-requisitos: Node 24+, Docker (para Postgres + Redis + Mailhog).
-
-```bash
-git clone <url-do-repositório>
-cd auth-system
-npm install
+```
+HTTP Request
+     │
+     ▼
+  Guards (FeatureGuard → RoleGuard → ScopeGuard)
+     │
+     ▼
+  Controller        ← valida DTO com Zod, orquestra HTTP
+     │
+     ▼
+  Service           ← regra de negócio pura, sem SQL nem HTTP
+     │
+     ▼
+  Repository        ← único ponto de acesso ao Prisma/banco
+     │
+     ▼
+  Prisma / PostgreSQL
 ```
 
-### 1. Suba a infraestrutura local
+---
 
+## Os 3 Guards de Segurança de Domínio
+
+Toda rota de domínio passa pelos três guards **nesta ordem**:
+
+### 1. `FeatureGuard` — `@RequireFeature('chave')`
+Verifica se a feature está habilitada para o tenant/curso/role do usuário.
+Resolução em camadas: `GLOBAL → TENANT → COURSE → ROLE` (mais específico vence).
+
+### 2. `RoleGuard` — `@Roles(...roles)`
+Verifica se a role do usuário logado está na lista permitida pela rota.
+
+### 3. `ScopeGuard` — `@RequireScope('class')`
+Garante vínculo com o recurso: professor só acessa turmas onde está vinculado,
+aluno só onde tem matrícula ativa. Admin/Secretaria passam sem checagem.
+
+> **Regra crítica:** nunca filtrar só por role. Toda query de professor/aluno é
+> filtrada por vínculo. Esconder no front não basta — o guard vive no backend.
+
+---
+
+## Módulos de Domínio
+
+| Módulo | Responsabilidade |
+|---|---|
+| `auth` | Login, refresh, MFA, reset de senha |
+| `users` | Perfil + troca de role (auditada) |
+| `settings` | FeatureConfig multi-camada, `GET /me/features` |
+| `academic` | Cursos, disciplinas, turmas, matrículas, vínculos de professor |
+| `content` | Aulas e materiais (draft/published) |
+| `assignments` | Atividades, entregas com flag `is_late` |
+| `grades` | Notas — toda alteração auditada |
+| `attendance` | Frequência — toda alteração auditada |
+| `notifications` | Eventos via fila BullMQ, in-app + e-mail |
+| `finance` | Faturas, Pix e boleto via Asaas |
+| `documents` | Documentos oficiais com geração de PDF |
+| `live-classes` | Aulas ao vivo, gravação vira Material |
+| `tickets` | Canal de atendimento aluno ↔ secretaria |
+| `assistant` | Chatbot com tool-calling + RAG institucional |
+
+---
+
+## Auditoria
+
+`AuditLog` gerado obrigatoriamente em:
+
+| Ação | `action` |
+|---|---|
+| Alteração de nota | `UPDATE` |
+| Alteração de frequência | `UPDATE` |
+| Baixa manual de pagamento | `MANUAL_PAYMENT` |
+| Troca de role de usuário | `ROLE_CHANGE` |
+| Emissão / recusa de documento | `EMITIDO` / `RECUSADO` |
+
+---
+
+## Financeiro — Regra de Ouro
+
+`Invoice` só transita para `PAGO` por dois caminhos:
+
+1. **Webhook** `POST /webhooks/pagamentos` — único ponto automático. Valida `asaas-access-token`, sem JWT.
+2. **Baixa manual** — restrita a ADMIN/SECRETARIA, sempre gera `AuditLog`.
+
+Job diário (BullMQ, `0 6 * * *`) marca faturas vencidas como `VENCIDO` e notifica o aluno.
+
+---
+
+## Assistente (Chatbot)
+
+`POST /assistant/chat` — habilitável por tenant via `@RequireFeature('assistant')`.
+
+- **Tool-calling nativo** sobre os services de domínio existentes (sem reimplementar regras)
+- **RAG institucional** via busca textual (ILIKE → pgvector quando migrado)
+- Guardrail temático: só responde sobre o domínio acadêmico do portal
+- Nunca inventa dados — usa apenas o que as tools retornarem
+
+---
+
+## Como Rodar
+
+### Pré-requisitos
+- Node.js 20+, Docker, NPM
+
+### 1. Sobe a infra
 ```bash
-docker compose up -d
+docker-compose up -d
 ```
 
-Isso sobe Postgres (`localhost:5432`, usuário/senha `auth`/`auth`, banco
-`auth_system`) e Mailhog (SMTP em `localhost:1025`, UI web em
-[http://localhost:8025](http://localhost:8025) para ver os e-mails
-enviados sem precisar de uma caixa real).
-
-### 2. Configure as variáveis de ambiente
-
+### 2. Configura o ambiente
 ```bash
 cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env
+# preencha DATABASE_URL, REDIS_URL, JWT secrets, ASAAS_*, ANTHROPIC_API_KEY, MAIL_*
 ```
 
-Gere um `JWT_ACCESS_SECRET` real (mínimo 32 caracteres) e cole em
-`apps/api/.env`:
-
-```bash
-node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"
-```
-
-Os demais valores padrão do `.env.example` já funcionam com o
-`docker compose` acima.
-
-### 3. Aplique as migrations
-
+### 3. Instala e inicializa
 ```bash
 cd apps/api
+npm install
+npx prisma generate
 npx prisma migrate deploy
 ```
 
-> Se for a primeira vez rodando após adicionar MFA, a migration `add_mfa_fields` já está incluída.
-
-### 4. Suba as aplicações
-
-Em dois terminais separados, a partir da raiz do repositório:
-
+### 4. Roda o servidor
 ```bash
-npm run start:dev --workspace=api   # http://localhost:3000
-npm run dev --workspace=web         # http://localhost:5173
+npm run start:dev    # desenvolvimento
+npm run start:prod   # produção (após npm run build)
 ```
 
-Abra [http://localhost:5173](http://localhost:5173), cadastre uma conta e
-confira o e-mail de verificação em
-[http://localhost:8025](http://localhost:8025) (Mailhog captura tudo, não
-envia de verdade).
-
-## Testes
-
-Todos os comandos abaixo rodam a partir de `apps/api`.
-
+### 5. Testes
 ```bash
-npm test              # unitários — Services com dependências mockadas
-npm run test:e2e      # e2e HTTP — guards, DTOs, cookies, sem banco real
-npm run test:e2e:real # e2e completo — Postgres real, banco isolado (auth_system_test)
+npm test             # 140 testes unitários (sem banco)
+npm run test:cov     # com cobertura
 ```
 
-O `test:e2e:real` sobe suas próprias migrations num banco
-`auth_system_test` completamente separado do banco de desenvolvimento —
-nunca toca `auth_system`. Veja [ARCHITECTURE.md](./ARCHITECTURE.md#testes)
-para o porquê da separação em três camadas.
+---
 
-## CI
-
-`.github/workflows/ci.yml` roda em todo push/PR: lint + testes unitários +
-e2e mockado + e2e real (com um serviço Postgres efêmero do próprio
-GitHub Actions) + build do back-end, e lint + build do front-end.
-
-## Deploy (gratuito)
-
-Stack sugerida, toda em camada free tier:
-
-| Peça                | Serviço                                                        |
-| ------------------- | -------------------------------------------------------------- |
-| Banco Postgres      | [Neon](https://neon.tech)                                      |
-| Redis               | [Upstash](https://upstash.com) (free tier)                     |
-| API (NestJS)        | [Render](https://render.com) ou [Railway](https://railway.app) |
-| Front-end (Vite)    | [Vercel](https://vercel.com)                                   |
-| E-mail transacional | [Resend](https://resend.com)                                   |
-
-> O `docker-compose.yml` sobe um serviço Redis usado pela aplicação para rate
-> limiting persistente, blocklist de access tokens e challenges de MFA. Em
-> produção, configure `REDIS_URL` com a URL do seu Redis.
-
-### 1. Banco de dados — Neon
-
-1. Crie um projeto gratuito em [neon.tech](https://neon.tech).
-2. Copie a connection string (formato `postgresql://...`).
-3. Rode as migrations localmente contra ela antes do primeiro deploy:
-   ```bash
-   DATABASE_URL="<connection-string-do-neon>" npx prisma migrate deploy
-   ```
-   (a partir de `apps/api`).
-
-### 2. E-mail — Resend
-
-1. Crie uma conta em [resend.com](https://resend.com) e gere uma API key.
-2. Verifique um domínio (ou use o domínio de testes deles pra portfólio).
-3. Configure as variáveis SMTP da API com as credenciais SMTP do Resend
-   (`SMTP_HOST=smtp.resend.com`, `SMTP_PORT=465`, `SMTP_SECURE=true`,
-   `SMTP_USER=resend`, `SMTP_PASS=<api-key>`).
-
-### 3. API — Render ou Railway
-
-1. Crie um novo serviço Web apontando pro repositório, diretório raiz
-   `apps/api`.
-2. Build command: `npm install && npx prisma generate && npm run build`.
-3. Start command: `npm run start:prod`.
-4. Configure as variáveis de ambiente (mesmas de `apps/api/.env.example`),
-   com `DATABASE_URL` do Neon, `REDIS_URL` do Upstash, `NODE_ENV=production`,
-   `FRONTEND_URL` e `CORS_ORIGINS` apontando para o domínio que o Vercel vai
-   gerar no passo seguinte.
-
-### 4. Front-end — Vercel
-
-1. Importe o repositório na Vercel, diretório raiz `apps/web`.
-2. Build command: `npm run build`. Output directory: `dist`.
-3. Variável de ambiente `VITE_API_URL` apontando para a URL pública da API
-   (passo anterior).
-4. Depois do primeiro deploy, volte na API e atualize `FRONTEND_URL` com o
-   domínio final do Vercel (necessário para CORS e para os links dos
-   e-mails de verificação/reset apontarem pro lugar certo).
-
-## Estrutura do monorepo
+## Estrutura do Repositório
 
 ```
 apps/
-  api/      NestJS — módulos auth, users, mail, hibp (src/modules/*)
-  web/      React + Vite — telas de autenticação (src/features/auth)
-packages/
-  shared/   Schemas Zod compartilhados entre api e web
+  api/                ← backend NestJS (este projeto)
+    src/
+      common/         guards, decorators, audit, interfaces
+      infrastructure/ bullmq, redis
+      integrations/   payment (Asaas), llm (Anthropic), pdf (pdfkit)
+      jobs/           processors e schedulers BullMQ
+      modules/        13 módulos de domínio
+      webhooks/       /webhooks/pagamentos (sem JWT)
+      prisma/         PrismaModule
+    prisma/
+      schema.prisma
+      migrations/
 ```
+
+Para decisões arquiteturais detalhadas, setup completo e referência de endpoints,
+veja o [`apps/api/README.md`](./apps/api/README.md).
