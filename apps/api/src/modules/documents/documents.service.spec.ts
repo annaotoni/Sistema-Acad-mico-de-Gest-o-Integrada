@@ -11,9 +11,10 @@ const mockRepo = {
 };
 const mockPdf = { generate: jest.fn() };
 const mockNotifications = { publish: jest.fn() };
+const mockAudit = { log: jest.fn() };
 
 const makeService = () =>
-  new DocumentsService(mockRepo as any, mockPdf as any, mockNotifications as any);
+  new DocumentsService(mockRepo as any, mockPdf as any, mockNotifications as any, mockAudit as any);
 
 const secretaria = { sub: 'sec-1', role: Role.SECRETARIA, tenantId: 'tenant-1', jti: '', iat: 0, exp: 0 };
 const aluno = { sub: 'aluno-1', role: Role.ALUNO, tenantId: 'tenant-1', jti: '', iat: 0, exp: 0 };
@@ -43,32 +44,39 @@ describe('getDocument', () => {
 });
 
 describe('review', () => {
-  it('recusa documento e notifica', async () => {
+  it('recusa documento, grava AuditLog e notifica', async () => {
     mockRepo.findById.mockResolvedValue(solicitadoDoc);
     mockRepo.update.mockResolvedValue({});
+    mockAudit.log.mockResolvedValue({});
     mockNotifications.publish.mockResolvedValue(undefined);
 
     await makeService().review('doc-1', { action: 'reject', notes: 'Inválido' }, secretaria);
+
     expect(mockRepo.update).toHaveBeenCalledWith('doc-1', expect.objectContaining({ status: DocumentStatus.RECUSADO }));
+    expect(mockAudit.log).toHaveBeenCalledWith(expect.objectContaining({ action: 'RECUSADO' }));
     expect(mockNotifications.publish).toHaveBeenCalled();
   });
 
-  it('aprova: gera PDF e marca EMITIDO', async () => {
+  it('aprova: gera PDF, marca EMITIDO e grava AuditLog', async () => {
     mockRepo.findById
       .mockResolvedValueOnce(solicitadoDoc)
       .mockResolvedValueOnce({ ...solicitadoDoc, status: DocumentStatus.EMITIDO });
     mockRepo.update.mockResolvedValue({});
     mockPdf.generate.mockResolvedValue(Buffer.from('pdf'));
+    mockAudit.log.mockResolvedValue({});
     mockNotifications.publish.mockResolvedValue(undefined);
 
-    const result = await makeService().review('doc-1', { action: 'approve' }, secretaria);
+    await makeService().review('doc-1', { action: 'approve' }, secretaria);
+
     expect(mockPdf.generate).toHaveBeenCalled();
     expect(mockRepo.update).toHaveBeenCalledWith('doc-1', expect.objectContaining({ status: DocumentStatus.EMITIDO }));
+    expect(mockAudit.log).toHaveBeenCalledWith(expect.objectContaining({ action: 'EMITIDO' }));
   });
 
   it('rejeita ação em documento já finalizado', async () => {
     mockRepo.findById.mockResolvedValue({ ...solicitadoDoc, status: DocumentStatus.EMITIDO });
     await expect(makeService().review('doc-1', { action: 'approve' }, secretaria))
       .rejects.toBeInstanceOf(BadRequestException);
+    expect(mockAudit.log).not.toHaveBeenCalled();
   });
 });

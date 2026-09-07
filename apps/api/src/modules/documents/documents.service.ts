@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { DocumentStatus, Role } from '@prisma/client';
 import type { AccessTokenPayload } from '../../common/interfaces/access-token-payload';
+import { AuditService } from '../../common/audit/audit.service';
 import { PdfService } from '../../integrations/pdf/pdf.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NOTIFICATION_EVENTS } from '../notifications/notifications-events';
@@ -22,6 +23,7 @@ export class DocumentsService {
     private readonly repo: DocumentsRepository,
     private readonly pdf: PdfService,
     private readonly notifications: NotificationsService,
+    private readonly audit: AuditService,
   ) {}
 
   create(dto: RequestDocumentDto, user: AccessTokenPayload) {
@@ -62,6 +64,14 @@ export class DocumentsService {
         reviewedById: actor.sub,
         reviewedAt: new Date(),
       });
+      await this.audit.log({
+        entity: 'Document',
+        entityId: id,
+        userId: actor.sub,
+        action: 'RECUSADO',
+        oldValue: { status: doc.status },
+        newValue: { status: DocumentStatus.RECUSADO, notes: dto.notes },
+      });
       await this.notifications.publish({
         type: NOTIFICATION_EVENTS.DOCUMENTO_EMITIDO,
         userId: doc.studentId,
@@ -90,6 +100,15 @@ export class DocumentsService {
       notes: dto.notes,
       reviewedById: actor.sub,
       reviewedAt: new Date(),
+    });
+
+    await this.audit.log({
+      entity: 'Document',
+      entityId: id,
+      userId: actor.sub,
+      action: 'EMITIDO',
+      oldValue: { status: doc.status },
+      newValue: { status: DocumentStatus.EMITIDO },
     });
 
     await this.notifications.publish({
