@@ -1,0 +1,234 @@
+<mxfile host="Claude">
+  <diagram name="Sistema Acadêmico — Arquitetura">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Título -->
+        <mxCell id="title" value="Sistema Acadêmico — Arquitetura de Backend" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="377" y="4" width="900" height="36" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== CLIENTES ===================== -->
+        <mxCell id="client-browser" value="Browser / Mobile App" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="480" y="46" width="180" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="client-asaas" value="Asaas&#xa;(Webhook Sender)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1220" y="46" width="140" height="52" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== ENTRADA DA API ===================== -->
+        <mxCell id="api-layer" value="NestJS API — Ponto de Entrada" style="swimlane;startSize=30;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="160" y="152" width="960" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="api-helmet" value="Helmet" style="rounded=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="api-layer">
+          <mxGeometry x="14" y="34" width="82" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="api-cors" value="CORS" style="rounded=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="api-layer">
+          <mxGeometry x="106" y="34" width="80" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="api-throttler" value="Throttler&#xa;(Redis)" style="rounded=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="api-layer">
+          <mxGeometry x="196" y="34" width="90" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="api-validation" value="ValidationPipe" style="rounded=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="api-layer">
+          <mxGeometry x="296" y="34" width="110" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="api-cookie" value="Cookie Parser" style="rounded=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="api-layer">
+          <mxGeometry x="416" y="34" width="100" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="api-swagger" value="Swagger&#xa;(dev only)" style="rounded=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;fontStyle=2;" vertex="1" parent="api-layer">
+          <mxGeometry x="526" y="34" width="100" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- Webhooks — fora da auth JWT -->
+        <mxCell id="webhooks-endpoint" value="/webhooks/*&#xa;sem JWT auth&#xa;assinatura Asaas (timingSafeEqual)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1196" y="156" width="188" height="66" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== CADEIA DE GUARDS ===================== -->
+        <mxCell id="guard-chain" value="Cadeia de Segurança (Guards) — executados em ordem para toda rota autenticada" style="swimlane;startSize=28;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#333333;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="160" y="284" width="940" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="guard-jwt" value="1. JwtAuthGuard&#xa;JWT + Blacklist Redis" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="guard-chain">
+          <mxGeometry x="14" y="30" width="186" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="guard-feature" value="2. FeatureGuard&#xa;@RequireFeature — config por tenant" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="guard-chain">
+          <mxGeometry x="210" y="30" width="228" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="guard-role" value="3. RoleGuard&#xa;@Roles — Admin / Secretaria / Professor / Aluno" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="guard-chain">
+          <mxGeometry x="448" y="30" width="288" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="guard-scope" value="4. ScopeGuard&#xa;@RequireScope — vínculo (Enrollment / TeacherAssignment)" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="guard-chain">
+          <mxGeometry x="746" y="30" width="180" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== MÓDULOS DE DOMÍNIO ===================== -->
+        <mxCell id="domain-container" value="Módulos de Domínio — Controller → Service → Repository (Prisma)" style="swimlane;startSize=28;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#333333;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="410" width="1300" height="158" as="geometry" />
+        </mxCell>
+
+        <!-- Linha 1 de módulos -->
+        <mxCell id="mod-auth" value="Auth" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontStyle=1;" vertex="1" parent="domain-container">
+          <mxGeometry x="14" y="34" width="82" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-academic" value="Academic" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="domain-container">
+          <mxGeometry x="106" y="34" width="90" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-content" value="Content" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="domain-container">
+          <mxGeometry x="206" y="34" width="80" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-assignments" value="Assignments" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="domain-container">
+          <mxGeometry x="296" y="34" width="96" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-grades" value="Grades" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="domain-container">
+          <mxGeometry x="402" y="34" width="80" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-attendance" value="Attendance" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="domain-container">
+          <mxGeometry x="492" y="34" width="90" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-live" value="Live Classes" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="domain-container">
+          <mxGeometry x="592" y="34" width="96" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-finance" value="Finance" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="domain-container">
+          <mxGeometry x="698" y="34" width="80" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-notifications" value="Notifications" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="domain-container">
+          <mxGeometry x="788" y="34" width="100" height="34" as="geometry" />
+        </mxCell>
+
+        <!-- Linha 2 de módulos -->
+        <mxCell id="mod-documents" value="Documents" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="domain-container">
+          <mxGeometry x="14" y="96" width="90" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-tickets" value="Tickets" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="domain-container">
+          <mxGeometry x="114" y="96" width="80" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-settings" value="Settings" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="domain-container">
+          <mxGeometry x="204" y="96" width="80" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-audit" value="Audit" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="domain-container">
+          <mxGeometry x="294" y="96" width="80" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-assistant" value="Assistant (LLM + RAG)" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontStyle=1;" vertex="1" parent="domain-container">
+          <mxGeometry x="384" y="96" width="154" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-jobs" value="Jobs (BullMQ)" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontStyle=2;" vertex="1" parent="domain-container">
+          <mxGeometry x="548" y="96" width="108" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-webhooks" value="Webhooks&#xa;(processamento)" style="rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="domain-container">
+          <mxGeometry x="666" y="96" width="120" height="34" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== INFRAESTRUTURA ===================== -->
+        <mxCell id="infra-container" value="Infraestrutura" style="swimlane;startSize=28;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#333333;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="630" width="650" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="infra-pg" value="PostgreSQL&#xa;(Prisma 6)" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="infra-container">
+          <mxGeometry x="14" y="30" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="infra-redis" value="Redis&#xa;(Cache + Throttle)" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="infra-container">
+          <mxGeometry x="160" y="30" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="infra-bullmq" value="BullMQ&#xa;(Filas + Agendamento)" style="rounded=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="infra-container">
+          <mxGeometry x="306" y="30" width="160" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="infra-pgvector" value="pgvector&#xa;(Vector Store RAG)" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="infra-container">
+          <mxGeometry x="482" y="30" width="150" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== INTEGRAÇÕES EXTERNAS ===================== -->
+        <mxCell id="ext-container" value="Integrações Externas" style="swimlane;startSize=28;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#333333;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="750" y="630" width="640" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="ext-asaas" value="Asaas&#xa;(Pix + Boleto)" style="rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="ext-container">
+          <mxGeometry x="14" y="30" width="118" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ext-llm" value="Anthropic Claude&#xa;(LLM Provider)" style="rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="ext-container">
+          <mxGeometry x="142" y="30" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ext-email" value="E-mail&#xa;(SMTP)" style="rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="ext-container">
+          <mxGeometry x="282" y="30" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ext-pdf" value="PDF Generator&#xa;(Puppeteer)" style="rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="ext-container">
+          <mxGeometry x="392" y="30" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ext-video" value="Video Provider&#xa;(Live Classes)" style="rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="ext-container">
+          <mxGeometry x="512" y="30" width="114" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ===================== ARESTAS ===================== -->
+        <!-- Browser → API -->
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="client-browser" target="api-layer" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Asaas → Webhooks endpoint -->
+        <mxCell id="e2" value="POST /webhooks/pagamentos" style="edgeStyle=orthogonalEdgeStyle;fontSize=9;" edge="1" source="client-asaas" target="webhooks-endpoint" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- API → Guards -->
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="api-layer" target="guard-chain" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Guards → Domain -->
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="guard-chain" target="domain-container" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Webhooks endpoint → Webhooks processor (no domain) -->
+        <mxCell id="e5" value="valida assinatura" style="edgeStyle=orthogonalEdgeStyle;dashed=1;fontSize=9;" edge="1" source="webhooks-endpoint" target="mod-webhooks" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Domain → Infra (Prisma/DB) -->
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="domain-container" target="infra-container" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Finance → Asaas -->
+        <mxCell id="e7" value="Pix / Boleto" style="edgeStyle=orthogonalEdgeStyle;dashed=1;fontSize=9;" edge="1" source="mod-finance" target="ext-asaas" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Assistant → LLM -->
+        <mxCell id="e8" value="tool-calling" style="edgeStyle=orthogonalEdgeStyle;dashed=1;fontSize=9;" edge="1" source="mod-assistant" target="ext-llm" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Notifications → Email -->
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;dashed=1;fontSize=9;" edge="1" source="mod-notifications" target="ext-email" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Documents → PDF -->
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;dashed=1;fontSize=9;" edge="1" source="mod-documents" target="ext-pdf" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Live Classes → Video Provider -->
+        <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;dashed=1;fontSize=9;" edge="1" source="mod-live" target="ext-video" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Notifications → BullMQ -->
+        <mxCell id="e12" value="enfileira" style="edgeStyle=orthogonalEdgeStyle;dashed=1;fontSize=9;" edge="1" source="mod-notifications" target="infra-bullmq" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Settings → Redis (cache de features) -->
+        <mxCell id="e13" value="cache TTL" style="edgeStyle=orthogonalEdgeStyle;dashed=1;fontSize=9;" edge="1" source="mod-settings" target="infra-redis" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Assistant → pgvector (RAG) -->
+        <mxCell id="e14" value="vector search" style="edgeStyle=orthogonalEdgeStyle;dashed=1;fontSize=9;" edge="1" source="mod-assistant" target="infra-pgvector" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
