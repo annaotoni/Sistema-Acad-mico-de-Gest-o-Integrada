@@ -14,13 +14,13 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: auth
-          POSTGRES_PASSWORD: auth
-          POSTGRES_DB: auth_system_test
+          POSTGRES_USER: academico
+          POSTGRES_PASSWORD: academico
+          POSTGRES_DB: sistema_academico_test
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U auth -d auth_system_test"
+          --health-cmd "pg_isready -U academico -d sistema_academico_test"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -36,16 +36,17 @@ jobs:
           --health-retries 10
 
     env:
-      DATABASE_URL: postgresql://auth:auth@localhost:5432/auth_system_test?schema=public
-      TEST_DATABASE_URL: postgresql://auth:auth@localhost:5432/auth_system_test?schema=public
+      DATABASE_URL: postgresql://academico:academico@localhost:5432/sistema_academico_test?schema=public
+      TEST_DATABASE_URL: postgresql://academico:academico@localhost:5432/sistema_academico_test?schema=public
       JWT_ACCESS_SECRET: ci-secret-de-teste-com-pelo-menos-32-caracteres
+      JWT_REFRESH_SECRET: ci-refresh-secret-de-teste-com-pelo-menos-32-chars
       REDIS_URL: redis://localhost:6379
       FRONTEND_URL: http://localhost:5173
       CORS_ORIGINS: http://localhost:5173
       SMTP_HOST: localhost
       SMTP_PORT: 1025
       SMTP_SECURE: 'false'
-      MAIL_FROM: noreply@auth-system.local
+      MAIL_FROM: noreply@sistema-academico.local
 
     steps:
       - uses: actions/checkout@v4

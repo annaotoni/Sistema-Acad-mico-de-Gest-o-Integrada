@@ -1,6 +1,6 @@
 process.env.DATABASE_URL =
   process.env.TEST_DATABASE_URL ??
-  'postgresql://auth:auth@localhost:5432/auth_system_test?schema=public';
+  'postgresql://academico:academico@localhost:5432/sistema_academico_test?schema=public';
 
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
@@ -41,6 +41,8 @@ function refreshCookieFrom(response: request.Response): string {
 // o de dev). Só e-mail e HIBP são mockados; Prisma, hashing, JWT e cookies
 // são o código de produção de fato. Os testes rodam em sequência e dependem
 // uns dos outros (mesma conta atravessa o fluxo inteiro).
+jest.setTimeout(30000);
+
 describe('Fluxo crítico de autenticação (e2e real)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
