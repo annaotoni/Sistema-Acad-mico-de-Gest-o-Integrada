@@ -293,6 +293,7 @@ model Class {
   period             AcademicPeriod      @relation(fields: [periodId], references: [id])
   enrollments        Enrollment[]
   teacherAssignments TeacherAssignment[]
+  materials          Material[]
   lessons            Lesson[]
   assignments        Assignment[]
   grades             Grade[]
