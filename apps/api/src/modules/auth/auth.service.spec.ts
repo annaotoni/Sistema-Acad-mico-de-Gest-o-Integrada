@@ -19,7 +19,7 @@ jest.mock('./services/mfa.service');
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: {
-    user: { create: jest.Mock; update: jest.Mock };
+    user: { create: jest.Mock; update: jest.Mock; findUnique: jest.Mock; findUniqueOrThrow: jest.Mock };
     emailVerificationToken: {
       findUnique: jest.Mock;
       update: jest.Mock;
@@ -60,7 +60,7 @@ describe('AuthService', () => {
 
   beforeEach(async () => {
     prisma = {
-      user: { create: jest.fn(), update: jest.fn() },
+      user: { create: jest.fn(), update: jest.fn(), findUnique: jest.fn(), findUniqueOrThrow: jest.fn() },
       emailVerificationToken: {
         findUnique: jest.fn(),
         update: jest.fn(),
@@ -234,6 +234,8 @@ describe('AuthService', () => {
         id: 'user-1',
         passwordHash,
         emailVerifiedAt: new Date(),
+        role: 'ALUNO',
+        tenantId: null,
       });
       prisma.refreshToken.create.mockResolvedValue({ id: 'refresh-1' });
 
@@ -247,6 +249,8 @@ describe('AuthService', () => {
       expect(jwtService.sign).toHaveBeenCalledWith({
         sub: 'user-1',
         jti: expect.any(String),
+        role: 'ALUNO',
+        tenantId: null,
       });
       expect(result.refreshToken).toMatch(/^[0-9a-f]{64}$/);
 
@@ -433,6 +437,7 @@ describe('AuthService', () => {
         revokedAt: null,
         expiresAt: new Date(Date.now() + 60_000),
       });
+      prisma.user.findUniqueOrThrow.mockResolvedValue({ role: 'ALUNO', tenantId: null });
 
       const result = await service.refresh(
         'raw-old-token',
@@ -444,6 +449,8 @@ describe('AuthService', () => {
       expect(jwtService.sign).toHaveBeenCalledWith({
         sub: 'user-1',
         jti: expect.any(String),
+        role: 'ALUNO',
+        tenantId: null,
       });
       expect(result.refreshToken).toMatch(/^[0-9a-f]{64}$/);
       expect(result.refreshToken).not.toBe('raw-old-token');
