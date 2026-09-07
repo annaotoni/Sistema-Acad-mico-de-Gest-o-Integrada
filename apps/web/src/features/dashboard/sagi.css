@@ -1,0 +1,62 @@
+/* SAGI design tokens — scoped to .sagi to coexist with auth Tailwind theme */
+.sagi {
+  --bg: #FAFAFB; --surface: #FFFFFF; --surface-2: #F4F5F9; --surface-3: #EBEDF4;
+  --ink: #0E1A3C; --ink-2: #4C567A; --ink-3: #8A92AC;
+  --line: #E3E6F1; --line-2: #D3D8E9;
+  --navy: #14245B; --navy-soft: #E7EAF6;
+  --lilac: #6E4FE0; --lilac-hover: #5C3FCC; --lilac-soft: #EFEBFE; --lilac-line: #DCD3FB;
+  --on-lilac: #FFFFFF;
+  --ok: #0E7A5F; --ok-soft: #E2F4EE;
+  --warn: #8A5A00; --warn-soft: #FBF0DC;
+  --danger: #B0233A; --danger-soft: #FBE7EA;
+  --shadow: 0 1px 2px rgba(14,26,60,.05), 0 8px 24px rgba(14,26,60,.06);
+  --shadow-lg: 0 24px 60px rgba(14,26,60,.18);
+
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Manrope Variable', Manrope, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+  min-height: 100vh;
+  transition: background .25s ease, color .25s ease;
+}
+
+.sagi[data-theme="dark"] {
+  --bg: #08080B; --surface: #111219; --surface-2: #181A23; --surface-3: #20232E;
+  --ink: #F1F2F8; --ink-2: #A7AEC6; --ink-3: #6F7692;
+  --line: #262A37; --line-2: #333848;
+  --navy: #2A46A8; --navy-soft: #161C33;
+  --lilac: #9B84FF; --lilac-hover: #AF9CFF; --lilac-soft: #1E1A33; --lilac-line: #332C55;
+  --on-lilac: #100C22;
+  --ok: #4CD3A5; --ok-soft: #12241E;
+  --warn: #E5B45C; --warn-soft: #251E10;
+  --danger: #FF8095; --danger-soft: #2A1419;
+  --shadow: 0 1px 2px rgba(0,0,0,.5), 0 8px 24px rgba(0,0,0,.4);
+  --shadow-lg: 0 24px 60px rgba(0,0,0,.6);
+}
+
+.sagi * { box-sizing: border-box; }
+.sagi a { color: var(--lilac); text-decoration: none; }
+.sagi a:hover { color: var(--lilac-hover); text-decoration: underline; }
+.sagi button { font-family: inherit; }
+.sagi input, .sagi textarea { font-family: inherit; }
+.sagi input::placeholder, .sagi textarea::placeholder { color: var(--ink-3); }
+
+/* Hover utilities */
+.sagi .s-row { transition: background .12s ease; }
+.sagi .s-row:hover { background: var(--surface-2); }
+.sagi .s-card-hover:hover { border-color: var(--lilac-line) !important; }
+.sagi .s-btn-sec { transition: border-color .15s, color .15s; }
+.sagi .s-btn-sec:hover { border-color: var(--lilac) !important; color: var(--lilac) !important; }
+.sagi .s-topbar-btn { transition: border-color .15s, color .15s; }
+.sagi .s-topbar-btn:hover { border-color: var(--lilac-line) !important; }
+.sagi .s-tab { border: none; background: transparent; cursor: pointer; padding: 11px 15px 13px; font-size: 13.5px; white-space: nowrap; transition: color .15s ease; font-family: inherit; }
+.sagi .s-notif-btn:hover { border-color: var(--lilac-line) !important; color: var(--lilac) !important; }
+
+/* Mono */
+.sagi .mono { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+
+@keyframes sagiRise { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+@keyframes sagiPulse { 0%,100% { opacity:.35; transform:scale(1); } 50% { opacity:.9; transform:scale(1.35); } }
+.sagi .sagi-rise { animation: sagiRise .22s ease; }
+.sagi .sagi-pulse { animation: sagiPulse 1.8s ease-in-out infinite; }
